@@ -10,8 +10,6 @@ import com.example.backend.entity.*;
 import com.example.backend.exception.InvalidTokenException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.TooManyRequestsException;
-import com.example.backend.repository.OTPRepository;
-import com.example.backend.repository.PasswordResetAttemptRepository;
 import com.example.backend.repository.UsersRepo;
 import com.example.backend.repository.VerificationTokenRepo;
 import com.example.backend.util.EmailService;
@@ -24,8 +22,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -63,10 +63,12 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JWTserviceImpl jwtService;
     private final Cloudinary cloudinary;
-    private final OTPRepository otpRepository;
-    private final PasswordResetAttemptRepository attemptRepo;
+    private final StringRedisTemplate redisTemplate;
+    private final com.example.backend.auth.service.TokenBlacklistService tokenBlacklistService;
 
-
+    // Redis Key Constants
+    private static final String RESET_ATTEMPT_PREFIX = "auth:reset_attempt:";
+    private static final String OTP_PREFIX = "auth:otp:";
 
 
 
@@ -237,10 +239,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse refreshToken(RefreshTokenReq refreshTokenReq) {
-        String email;
+        String refreshToken = refreshTokenReq.getToken();
 
+        // 1. Check if token is blacklisted in Redis
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            throw new InvalidTokenException("Refresh token has been revoked (blacklisted). Please login again.");
+        }
+
+        String email;
         try {
-            email = jwtService.extractUsername(refreshTokenReq.getToken());
+            email = jwtService.extractUsername(refreshToken);
         } catch (Exception e) {
             throw new InvalidTokenException("Invalid refresh token");
         }
@@ -248,8 +256,8 @@ public class AuthServiceImpl implements AuthService {
         Users user = usersRepo.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
-        // Validate refresh token
-        if (!jwtService.validateToken(refreshTokenReq.getToken(), user)) {
+        // 2. Validate token signature and expiry
+        if (!jwtService.validateToken(refreshToken, user)) {
             throw new InvalidTokenException("Refresh token expired or invalid");
         }
 
@@ -259,7 +267,7 @@ public class AuthServiceImpl implements AuthService {
         return new LoginResponse(
                 "Token refreshed successfully",
                 newAccessToken,
-                refreshTokenReq.getToken(), // reuse same refresh token
+                refreshToken, // reuse same refresh token
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
@@ -275,15 +283,41 @@ public class AuthServiceImpl implements AuthService {
      *
      * In a stateless JWT setup, logout is handled client-side by
      * deleting the access and refresh tokens.
-     * No server-side action is required.
+     * We also blacklist the token in Redis to prevent further usage until expiry.
      *
-     * @param email authenticated user's email
-     * @param refreshToken optional refresh token (currently unused)
+     * @param accessToken authenticated user's access token
+     * @param refreshToken optional refresh token
      * @return message confirming logout
      */
     @Override
-    public MessageResponse logout(String email, String refreshToken) {
-        // Stateless JWT → nothing to do server-side
+    public MessageResponse logout(String accessToken, String refreshToken) {
+        
+        // 1. Blacklist Access Token
+        if (accessToken != null && !accessToken.isEmpty()) {
+            try {
+                java.util.Date expiration = jwtService.extractExpiration(accessToken);
+                long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;
+                if (ttl > 0) {
+                    tokenBlacklistService.blacklistToken(accessToken, ttl);
+                }
+            } catch (Exception e) {
+                // If token is invalid or expired, no need to blacklist
+            }
+        }
+
+        // 2. Blacklist Refresh Token (if provided)
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+             try {
+                java.util.Date expiration = jwtService.extractExpiration(refreshToken);
+                long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;
+                if (ttl > 0) {
+                    tokenBlacklistService.blacklistToken(refreshToken, ttl);
+                }
+             } catch (Exception e) {
+                 // If token is invalid or expired, no need to blacklist
+             }
+        }
+        
         return new MessageResponse("Logged out successfully");
     }
 
@@ -522,34 +556,27 @@ public class AuthServiceImpl implements AuthService {
         Users user = usersRepo.findByEmail(currentEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("User not found with email: " + currentEmail));
 
-        PasswordResetAttempt attempt =
-                attemptRepo.findByEmail(currentEmail)
-                        .orElse(new PasswordResetAttempt());
+        // Rate Limiting using Redis
+        String rateLimitKey = RESET_ATTEMPT_PREFIX + currentEmail;
+        String attemptsStr = redisTemplate.opsForValue().get(rateLimitKey);
+        int attempts = attemptsStr != null ? Integer.parseInt(attemptsStr) : 0;
 
-        if (attempt.getAttempts() >= 3 &&
-                attempt.getLastAttempt().isAfter(LocalDateTime.now().minusHours(1))) {
+        if (attempts >= 3) {
             throw new TooManyRequestsException("Too many reset attempts. Try again later.");
         }
 
-        // Update attempts
-        attempt.setEmail(currentEmail);
-        attempt.setAttempts(attempt.getAttempts() + 1);
-        attempt.setLastAttempt(LocalDateTime.now());
-        attemptRepo.save(attempt);
-
+        // Increment attempts
+        redisTemplate.opsForValue().increment(rateLimitKey);
+        if (attempts == 0) {
+            redisTemplate.expire(rateLimitKey, Duration.ofHours(1));
+        }
 
         // generate 6-digit OTP
         String otp = String.format("%06d", new Random().nextInt(1_000_000));
 
-        // Optionally clean previous OTPs
-        otpRepository.deleteByUser(user);
-
-        // Save OTP in the database
-        OTP otpEntity = new OTP();
-        otpEntity.setUser(user);
-        otpEntity.setOtp(otp);
-        otpEntity.setExpiryDate(LocalDateTime.now().plusMinutes(15)); // OTP expiry time (15 minutes)
-        otpRepository.save(otpEntity);
+        // Store OTP in Redis with 15 min expiration
+        String otpKey = OTP_PREFIX + currentEmail;
+        redisTemplate.opsForValue().set(otpKey, otp, Duration.ofMinutes(15));
 
         // send email (do NOT include OTP in response)
         String body = "Hello " + user.getFirstName() + ",\n\n" +
@@ -577,12 +604,15 @@ public class AuthServiceImpl implements AuthService {
         Users user = usersRepo.findByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("User not found"));
 
-        OTP otpEntity = otpRepository.findByUserAndOtp(user, request.getOtp())
-                .orElseThrow(() -> new InvalidOtpException("Invalid OTP"));
+        String otpKey = OTP_PREFIX + request.getEmail();
+        String storedOtp = redisTemplate.opsForValue().get(otpKey);
 
-        if (otpEntity.getExpiryDate().isBefore(LocalDateTime.now())) {
-            otpRepository.delete(otpEntity);
-            throw new InvalidOtpException("OTP expired");
+        if (storedOtp == null) {
+            throw new InvalidOtpException("OTP expired or invalid");
+        }
+
+        if (!storedOtp.equals(request.getOtp())) {
+             throw new InvalidOtpException("Invalid OTP");
         }
 
         // update password
@@ -590,7 +620,10 @@ public class AuthServiceImpl implements AuthService {
         usersRepo.save(user);
 
         // delete OTP after successful use
-        otpRepository.delete(otpEntity);
+        redisTemplate.delete(otpKey);
+        
+        // Clear rate limit on success
+        redisTemplate.delete(RESET_ATTEMPT_PREFIX + request.getEmail());
 
         return new MessageResponse("Password reset successfully");
     }

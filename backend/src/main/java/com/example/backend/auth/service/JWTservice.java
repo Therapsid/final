@@ -12,4 +12,5 @@ public interface JWTservice {
     boolean validateToken(String token, UserDetails userDetails);
     String extractUsername(String token);
     List<String> extractRoles(String token);
+    java.util.Date extractExpiration(String token);
 }

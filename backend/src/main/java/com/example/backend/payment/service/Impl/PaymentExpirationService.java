@@ -5,6 +5,7 @@ import com.example.backend.payment.repository.PaymentRepository;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentExpirationService {
 
     private final PaymentRepository paymentRepository;
@@ -61,11 +63,11 @@ public class PaymentExpirationService {
                         // only cancel if it's in a cancelable state; this call may throw if not allowed
                         pi.cancel();
                     } catch (Exception e) {
-                        // log & continue — cancellation not required
+                        log.warn("Could not cancel PaymentIntent for session {}: {}", session.getId(), e.getMessage());
                     }
                 }
             } catch (Exception ex) {
-                // log error and continue with next
+                log.error("Error processing payment expiration for payment {}: {}", p.getId(), ex.getMessage(), ex);
             }
         }
     }

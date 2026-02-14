@@ -17,7 +17,7 @@ public interface ProductService {
 
     ProductResponse getProductById(UUID id);
 
-    List<ProductResponse> getAllProducts();
+    org.springframework.data.domain.Page<ProductResponse> getAllProducts(int page, int size);
 
     ProductResponse updateProduct(UUID id, ProductRequest request , MultipartFile file , String sellerEmail) throws IOException;
 

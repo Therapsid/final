@@ -25,6 +25,7 @@ public class JWTFilter extends OncePerRequestFilter {
     private final JWTservice jwtservice;
     private final UsersServices userService;
     private final AuthenticationEntryPoint restAuthenticationEntryPoint; // inject your RestAuthenticationEntryPoint bean
+    private final com.example.backend.auth.service.TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -39,6 +40,11 @@ public class JWTFilter extends OncePerRequestFilter {
         try {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
+
+                if (tokenBlacklistService.isBlacklisted(token)) {
+                   throw new io.jsonwebtoken.JwtException("Token is blacklisted");
+                }
+
                 username = jwtservice.extractUsername(token); // can throw ExpiredJwtException or other JwtException
             }
 
@@ -61,12 +67,11 @@ public class JWTFilter extends OncePerRequestFilter {
 
         } catch (JwtException e) {
             // Token problems (expired, malformed, unsupported, etc)
-            // Wrap into an AuthenticationException and let AuthenticationEntryPoint handle it
             InsufficientAuthenticationException authEx = new InsufficientAuthenticationException("Invalid or expired JWT: " + e.getMessage());
             restAuthenticationEntryPoint.commence(request, response, authEx);
             // do NOT continue the filter chain
         } catch (Exception e) {
-            // Any other failure while processing token -> treat as authentication failure
+            // Any other failure while processing token
             InsufficientAuthenticationException authEx = new InsufficientAuthenticationException("Authentication failed: " + e.getMessage());
             restAuthenticationEntryPoint.commence(request, response, authEx);
         }

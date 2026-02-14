@@ -135,18 +135,22 @@ public class ProductServiceImpl implements ProductService {
 
 
     /**
-     * Get all products.
+     * Get all products with pagination.
      *
-     * @return list of ProductResponse objects
+     * @param page page number (0-indexed)
+     * @param size page size
+     * @return Page of ProductResponse objects
      */
     @Override
-    public List<ProductResponse> getAllProducts() {
-        List<Product> products = repo.findAll();
+    public org.springframework.data.domain.Page<ProductResponse> getAllProducts(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Product> products = repo.findAll(pageable);
+
         if (products.isEmpty()) {
-            return Collections.emptyList();
-            //throw new ProductNotFoundException("No Products Found :( ");
+             // Return empty page instead of list
+             return org.springframework.data.domain.Page.empty(pageable);
         }
-        return products.stream().map(p -> mapToResponse(p, "Products found successfully :D ")).collect(Collectors.toList());
+        return products.map(p -> mapToResponse(p, "Products found successfully :D "));
     }
 
 

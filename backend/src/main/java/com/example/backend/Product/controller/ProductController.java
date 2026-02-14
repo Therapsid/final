@@ -57,12 +57,14 @@ public class ProductController {
 
 
     @Operation(
-        summary = "Get all products.",
-        description = "Public endpoint that lists all products."
+        summary = "Get all products with pagination.",
+        description = "Public endpoint that lists products page by page."
     )
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts(){
-        return ResponseEntity.ok(productService.getAllProducts());
+    public ResponseEntity<org.springframework.data.domain.Page<ProductResponse>> getAllProducts(
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size){
+        return ResponseEntity.ok(productService.getAllProducts(page, size));
     }
 
     @Operation(

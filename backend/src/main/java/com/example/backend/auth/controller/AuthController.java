@@ -93,14 +93,22 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "Log out the current user and optionally revoke a refresh token.",
-            description = "This endpoint invalidates the server-side session /refresh token state for the authenticated user. If a refresh token is supplied, it will be revoked; otherwise the service may revoke tokens associated with the authenticated user.",
+            summary = "Log out the current user and blacklist the token.",
+            description = "Blacklists the current access token (and optional refresh token) in Redis until expiry.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(
-            @Parameter(hidden = true) Authentication authentication) {
-        return ResponseEntity.ok(authService.logout(authentication.getName(), null));
+            @Parameter(hidden = true) jakarta.servlet.http.HttpServletRequest request,
+            @Parameter(description = "Optional refresh token to revoke") @RequestParam(required = false) String refreshToken) {
+            
+        String authHeader = request.getHeader("Authorization");
+        String accessToken = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            accessToken = authHeader.substring(7);
+        }
+        
+        return ResponseEntity.ok(authService.logout(accessToken, refreshToken));
     }
 
 

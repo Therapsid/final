@@ -33,7 +33,7 @@ public interface AuthService {
 
     LoginResponse refreshToken(RefreshTokenReq refreshTokenReq);
 
-    MessageResponse logout(String email, String refreshToken);
+    MessageResponse logout(String accessToken, String refreshToken);
 
     MessageResponse updatePassword(UpdatePasswordRequest request, String currentUserEmail);
 
