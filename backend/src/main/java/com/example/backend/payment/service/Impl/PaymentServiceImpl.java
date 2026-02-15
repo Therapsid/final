@@ -1,8 +1,8 @@
 package com.example.backend.payment.service.Impl;
 
-import com.example.backend.Order.entity.Order;
-import com.example.backend.Order.entity.OrderStatus;
-import com.example.backend.Order.repository.OrderRepository;
+import com.example.backend.order.entity.Order;
+import com.example.backend.order.entity.OrderStatus;
+import com.example.backend.order.repository.OrderRepository;
 import com.example.backend.payment.dto.PaymentConfirmDto;
 import com.example.backend.payment.dto.PaymentCreateResponse;
 import com.example.backend.payment.dto.RefundRequest;

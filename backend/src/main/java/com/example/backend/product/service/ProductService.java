@@ -1,0 +1,24 @@
+package com.example.backend.product.service;
+
+import com.example.backend.product.dto.ProductRequest;
+import com.example.backend.product.dto.ProductResponse;
+import com.example.backend.auth.dto.responses.MessageResponse;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.UUID;
+
+@Service
+public interface ProductService {
+
+    ProductResponse createProduct(ProductRequest request, MultipartFile file , String sellerEmail) throws IOException;
+
+    ProductResponse getProductById(UUID id);
+
+    org.springframework.data.domain.Page<ProductResponse> getAllProducts(int page, int size);
+
+    ProductResponse updateProduct(UUID id, ProductRequest request , MultipartFile file , String sellerEmail) throws IOException;
+
+    MessageResponse deleteProduct(UUID id , String sellerEmail);
+}

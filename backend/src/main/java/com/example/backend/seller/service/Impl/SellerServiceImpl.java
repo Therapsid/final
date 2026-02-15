@@ -2,7 +2,7 @@ package com.example.backend.seller.service.Impl;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.example.backend.auth.dto.Responses.MessageResponse;
+import com.example.backend.auth.dto.responses.MessageResponse;
 import com.example.backend.auth.exception.UserNotFoundException;
 import com.example.backend.entity.Role;
 import com.example.backend.entity.Users;

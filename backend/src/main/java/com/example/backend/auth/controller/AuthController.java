@@ -1,7 +1,7 @@
 package com.example.backend.auth.controller;
 
-import com.example.backend.auth.dto.Requests.*;
-import com.example.backend.auth.dto.Responses.*;
+import com.example.backend.auth.dto.requests.*;
+import com.example.backend.auth.dto.responses.*;
 import com.example.backend.auth.service.AuthService;
 import com.example.backend.entity.Role;
 import com.example.backend.entity.Users;
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings("ALL")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

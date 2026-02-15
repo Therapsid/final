@@ -1,7 +1,7 @@
 package com.example.backend.auth.service;
 
-import com.example.backend.auth.dto.Requests.*;
-import com.example.backend.auth.dto.Responses.*;
+import com.example.backend.auth.dto.requests.*;
+import com.example.backend.auth.dto.responses.*;
 import com.example.backend.entity.Users;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;

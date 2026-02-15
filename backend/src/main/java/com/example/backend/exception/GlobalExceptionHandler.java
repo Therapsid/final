@@ -1,13 +1,13 @@
 package com.example.backend.exception;
 
-import com.example.backend.Category.exception.*;
-import com.example.backend.Order.exception.InsufficientStockException;
-import com.example.backend.Order.exception.OrderAlreadyPaidException;
-import com.example.backend.Order.exception.OrderCancellationException;
-import com.example.backend.Order.exception.OrderNotFoundException;
-import com.example.backend.Product.exception.*;
-import com.example.backend.Wishlist.exception.WishlistNotFoundException;
-import com.example.backend.auth.dto.Responses.MessageResponse;
+import com.example.backend.category.exception.*;
+import com.example.backend.order.exception.InsufficientStockException;
+import com.example.backend.order.exception.OrderAlreadyPaidException;
+import com.example.backend.order.exception.OrderCancellationException;
+import com.example.backend.order.exception.OrderNotFoundException;
+import com.example.backend.product.exception.*;
+import com.example.backend.wishlist.exception.WishlistNotFoundException;
+import com.example.backend.auth.dto.responses.MessageResponse;
 import com.example.backend.auth.exception.AccountNotVerifiedException;
 import com.example.backend.auth.exception.EmailAlreadyUsedException;
 import com.example.backend.auth.exception.InvalidCredentialsException;
