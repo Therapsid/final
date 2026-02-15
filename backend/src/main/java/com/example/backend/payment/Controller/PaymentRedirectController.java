@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 // just for static resources page to avoid errors
 
 @Controller
-public class PaymentRedirctController {
+public class PaymentRedirectController {
 
     @GetMapping("/payment/success")
     public String success() {
