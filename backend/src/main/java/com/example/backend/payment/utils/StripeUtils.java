@@ -12,8 +12,8 @@ public final class StripeUtils {
     private StripeUtils() {}
 
     /**
-     * Convert a major currency BigDecimal to the smallest unit (cents) as a long.
-     * Throws NullPointerException if amount is null and ArithmeticException if value can't be represented.
+     * Convert a major currency BigDecimal to the smallest unit (cents) as along.
+     * Throws NullPointerException if the amount is null and ArithmeticException if the value can't be represented.
      */
     public static long amountToCents(BigDecimal amount) {
         Objects.requireNonNull(amount, "amount must not be null");

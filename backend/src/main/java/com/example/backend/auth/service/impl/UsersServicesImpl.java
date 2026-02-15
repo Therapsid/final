@@ -3,20 +3,23 @@ package com.example.backend.auth.service.impl;
 import com.example.backend.auth.service.UsersServices;
 import com.example.backend.entity.Users;
 import com.example.backend.repository.UsersRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UsersServicesImpl implements UsersServices {
 
-    @Autowired
-    private UsersRepo userRepo;
+
+    private final UsersRepo userRepo;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    @NonNull
+    public UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
         Users user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 

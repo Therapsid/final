@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -48,18 +50,18 @@ public class JWTFilter extends OncePerRequestFilter {
                 username = jwtservice.extractUsername(token); // can throw ExpiredJwtException or other JwtException
             }
 
-            if (username != null && org.springframework.security.core.context.SecurityContextHolder
+            if (username != null && SecurityContextHolder
                     .getContext().getAuthentication() == null) {
                 UserDetails userDetails = userService.loadUserByUsername(username);
 
                 if (jwtservice.validateToken(token, userDetails)) {
                     var claims = jwtservice.extractRoles(token);
                     var authorities = claims.stream()
-                            .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new).toList();
+                            .map(SimpleGrantedAuthority::new).toList();
 
                     var authToken = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(userDetails, null, authorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authToken);
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
 

@@ -15,7 +15,7 @@ import java.util.List;
 
 
 /**
- * Check for expired payments every minute.(after 60 minutes the link(of payment) will be expired )
+ * Check for expired payments every minute. (after 60 minutes the link (of payment) will be expired)
  */
 @Service
 @RequiredArgsConstructor
