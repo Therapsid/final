@@ -11,7 +11,6 @@ import com.example.backend.exception.InvalidTokenException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.TooManyRequestsException;
 import com.example.backend.repository.UsersRepo;
-import com.example.backend.repository.VerificationTokenRepo;
 import com.example.backend.util.EmailService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +58,6 @@ public class AuthServiceImpl implements AuthService {
     private final UsersRepo usersRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final VerificationTokenRepo verificationTokenRepo;
     private final AuthenticationManager authenticationManager;
     private final JWTserviceImpl jwtService;
     private final Cloudinary cloudinary;
@@ -69,6 +67,8 @@ public class AuthServiceImpl implements AuthService {
     // Redis Key Constants
     private static final String RESET_ATTEMPT_PREFIX = "auth:reset_attempt:";
     private static final String OTP_PREFIX = "auth:otp:";
+    private static final String VERIFY_EMAIL_PREFIX = "auth:verify_email:";
+    private static final String UPDATE_EMAIL_PREFIX = "auth:update_email:";
 
 
 
@@ -124,14 +124,9 @@ public class AuthServiceImpl implements AuthService {
     usersRepo.save(user);
 
 
-    // generate and store token
+    // generate and store token in Redis
     String token = UUID.randomUUID().toString();
-
-    VerificationToken verificationToken = new VerificationToken();
-    verificationToken.setToken(token);
-    verificationToken.setUser(user);
-    verificationToken.setExpiryDate(LocalDateTime.now().plusHours(24));
-    verificationTokenRepo.save(verificationToken);
+    redisTemplate.opsForValue().set(VERIFY_EMAIL_PREFIX + token, user.getEmail(), Duration.ofHours(24));
 
 
     // send verification email (change the URL depending on your deployment(frontend(3000) or backend(8080)) )
@@ -159,19 +154,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public MessageResponse verifyEmail(String token) {
-        VerificationToken verificationToken = verificationTokenRepo.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
-
-        if (verificationToken.isUsed() || verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+        String email = redisTemplate.opsForValue().get(VERIFY_EMAIL_PREFIX + token);
+        if (email == null) {
             return new MessageResponse("Token invalid or expired");
         }
 
-        Users user = verificationToken.getUser();
+        Users user = usersRepo.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         user.setEmailVerified(true);
         user.setEnabled(true);
         usersRepo.save(user);
-        verificationToken.setUsed(true);
-        verificationTokenRepo.save(verificationToken);
+
+        // Delete the token from Redis after successful verification
+        redisTemplate.delete(VERIFY_EMAIL_PREFIX + token);
 
         return new MessageResponse("Email verified successfully!");
     }
@@ -436,7 +431,6 @@ public class AuthServiceImpl implements AuthService {
     public MessageResponse deleteCurrentUser(String email) {
         Users user = usersRepo.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-        verificationTokenRepo.deleteByUser(user);
         usersRepo.delete(user);
         return new MessageResponse(
           " User Deleted Successfully :( "
@@ -464,15 +458,12 @@ public class AuthServiceImpl implements AuthService {
         if (usersRepo.findByEmail(newEmail).isPresent()) {
             throw new EmailAlreadyUsedException("The new email is already in use.");
         }
+        
         // Generate verification token
-        VerificationToken token = verificationTokenRepo.findByUser(user)
-                .orElse(new VerificationToken());
-        token.setUser(user);
-        token.setToken(UUID.randomUUID().toString());
-        token.setExpiryDate(LocalDateTime.now().plusHours(24));
-        token.setUsed(false);
-        token.setNewEmail(newEmail);
-        verificationTokenRepo.save(token);
+        String token = UUID.randomUUID().toString();
+        // Store currentEmail:newEmail to know which user to update and what is the new email
+        String value = currentEmail + ":" + newEmail;
+        redisTemplate.opsForValue().set(UPDATE_EMAIL_PREFIX + token, value, Duration.ofHours(24));
 
         // Send email with token link
         String verificationLink = "http://localhost:8080/api/v1/auth/update-email/verify?token=" + token;
@@ -484,7 +475,7 @@ public class AuthServiceImpl implements AuthService {
         return new UpdateEmailRequest(
                 "Verification email sent. Please check your inbox to confirm your new email.",
                 newEmail,
-                token.getToken()
+                token
         );
 
     }
@@ -503,21 +494,27 @@ public class AuthServiceImpl implements AuthService {
      */
     @Transactional
     public UpdateEmailResponse verifyEmailUpdate(String tokenStr) {
-        VerificationToken token = verificationTokenRepo.findByToken(tokenStr)
-                .orElseThrow(() -> new InvalidTokenException("The verification token is invalid or expired."));
-
-        if (token.isUsed()) {
-            throw new InvalidTokenException("This token has already been used.");
-        }
-        if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new InvalidTokenException("This token has expired.");
+        String value = redisTemplate.opsForValue().get(UPDATE_EMAIL_PREFIX + tokenStr);
+        if (value == null) {
+            throw new InvalidTokenException("The verification token is invalid or expired.");
         }
 
-        Users user = token.getUser();
-        user.setEmail(token.getNewEmail()); // new email from request saved in token
-        token.setUsed(true);
+        String[] parts = value.split(":");
+        if (parts.length != 2) {
+            throw new InvalidTokenException("Invalid token data.");
+        }
+        String currentEmail = parts[0];
+        String newEmail = parts[1];
+
+        Users user = usersRepo.findByEmail(currentEmail)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                
+        user.setEmail(newEmail);
         usersRepo.save(user);
-        verificationTokenRepo.save(token);
+        
+        // Delete token from Redis after use
+        redisTemplate.delete(UPDATE_EMAIL_PREFIX + tokenStr);
+        
         return new UpdateEmailResponse("Email updated successfully" , user.getEmail());
     }
 
