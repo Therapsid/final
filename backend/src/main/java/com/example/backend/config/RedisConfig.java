@@ -13,17 +13,10 @@ public class RedisConfig {
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
-        
-        // Use String serializer for keys
         template.setKeySerializer(new StringRedisSerializer());
-        
-        // Use String serializer for values (since we store mostly strings/JSON)
-        // If we need to store objects, we can use GenericJackson2JsonRedisSerializer
         template.setValueSerializer(new StringRedisSerializer());
-        
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new StringRedisSerializer());
-        
         return template;
     }
 }

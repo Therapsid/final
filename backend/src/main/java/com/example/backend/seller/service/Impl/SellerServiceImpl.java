@@ -16,6 +16,7 @@ import com.example.backend.seller.exception.SellerRequestException;
 import com.example.backend.seller.repository.SellerProfileRepo;
 import com.example.backend.seller.repository.SellerRequestRepo;
 import com.example.backend.seller.service.SellerService;
+import com.example.backend.util.CloudinaryService;
 import com.example.backend.util.EmailService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class SellerServiceImpl implements SellerService {
     private final SellerRequestRepo sellerRequestRepo;
     private final SellerProfileRepo sellerProfileRepo;
     private final Cloudinary cloudinary;
+    private final CloudinaryService cloudinaryService;
     private final EmailService emailService;
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -59,7 +61,7 @@ public class SellerServiceImpl implements SellerService {
      */
     @Override
     @Transactional
-    public SellerRequestResponse requestSeller(String userEmail, String storeName,String reason , MultipartFile document) throws IOException {
+    public SellerRequestResponse requestSeller(String userEmail, String storeName, String reason, MultipartFile document) throws IOException {
 
         Users user = usersRepo.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + userEmail));
@@ -70,19 +72,8 @@ public class SellerServiceImpl implements SellerService {
                     throw new SellerRequestException("You already have a pending seller request");
                 });
 
-        String documentUrl = null;
-        if (document != null && !document.isEmpty()) {
-            Map upload = cloudinary.uploader().upload(
-                    document.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", "SellerRequests",
-                            "public_id", userEmail + "_" + UUID.randomUUID(),
-                            "overwrite", true,
-                            "resource_type", "auto"
-                    )
-            );
-            documentUrl = (String) upload.get("secure_url");
-        }
+        String fileName = userEmail + "_" + UUID.randomUUID();
+        String documentUrl = cloudinaryService.uploadFile(document, "SellerRequests", fileName);
 
         SellerRequest request = SellerRequest.builder()
                 .user(user)

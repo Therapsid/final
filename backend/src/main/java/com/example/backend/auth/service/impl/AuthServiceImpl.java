@@ -6,22 +6,25 @@ import com.example.backend.auth.dto.requests.*;
 import com.example.backend.auth.dto.responses.*;
 import com.example.backend.auth.exception.*;
 import com.example.backend.auth.service.AuthService;
-import com.example.backend.entity.*;
+import com.example.backend.auth.service.TokenBlacklistService;
+import com.example.backend.entity.Role;
+import com.example.backend.entity.Users;
 import com.example.backend.exception.InvalidTokenException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.TooManyRequestsException;
 import com.example.backend.repository.UsersRepo;
+import com.example.backend.util.CloudinaryService;
 import com.example.backend.util.EmailService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -34,7 +37,7 @@ import java.util.UUID;
 
 /**
  * Authentication and user account service implementation.
- *
+ * <p>
  * Handles all authentication-related business logic including
  * - User registration and email verification
  * - Login and JWT token generation
@@ -43,7 +46,7 @@ import java.util.UUID;
  * - Profile management
  * - Password management (update, forgot, reset)
  * - Email update with verification
- *
+ * <p>
  * This service uses stateless JWT authentication where:
  * - Access tokens are short-lived
  * - Refresh tokens are long-lived and used only to get new access tokens
@@ -58,11 +61,12 @@ public class AuthServiceImpl implements AuthService {
     private final UsersRepo usersRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final CloudinaryService cloudinaryService;
     private final AuthenticationManager authenticationManager;
     private final JWTserviceImpl jwtService;
     private final Cloudinary cloudinary;
     private final StringRedisTemplate redisTemplate;
-    private final com.example.backend.auth.service.TokenBlacklistService tokenBlacklistService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // Redis Key Constants
     private static final String RESET_ATTEMPT_PREFIX = "auth:reset_attempt:";
@@ -71,80 +75,56 @@ public class AuthServiceImpl implements AuthService {
     private static final String UPDATE_EMAIL_PREFIX = "auth:update_email:";
 
 
-
-    /**
-     * Register a new user account.
-     *
-     * Creates a new user with the provided signup details, uploads an optional
-     * profile image to Cloudinary, generates an email verification token,
-     * and sends a verification email to the user.
-     *
-     * The user account remains disabled until email verification is completed.
-     *
-     * @param signUpRequest the signup request containing user details
-     * @param file optional profile image file
-     * @return a response indicating successful registration
-     * @throws IOException if image upload fails
-     */
     @Override
     @Transactional
-    public RegisterResponse register(SignUpRequest signUpRequest , MultipartFile file) throws IOException {
-    // check if email already exists
+    public RegisterResponse register(SignUpRequest signUpRequest, MultipartFile file) throws IOException {
+        // check if email already exists
         if (usersRepo.findByEmail(signUpRequest.getEmail()).isPresent()) {
             throw new EmailAlreadyUsedException("The new email is already in use.");
         }
         // Determine a role: default to USER if null (because if I want to create new roles for devs (usage only ex. adding category(admin) , adding product(seller))
         Role userRole = signUpRequest.getRole() != null ? signUpRequest.getRole() : Role.ROLE_USER;
-    // create new user
-    Users user = Users.builder()
-            .firstName(signUpRequest.getFirstName())
-            .lastName(signUpRequest.getLastName())
-            .email(signUpRequest.getEmail())
-            .role(userRole)
-            .password(passwordEncoder.encode(signUpRequest.getPassword()))
-            .enabled(false) // inactive until verified
-            .createdAt(LocalDateTime.now())
-            .build();
+        // create new user
+        Users user = Users.builder()
+                .firstName(signUpRequest.getFirstName())
+                .lastName(signUpRequest.getLastName())
+                .email(signUpRequest.getEmail())
+                .role(userRole)
+                .password(passwordEncoder.encode(signUpRequest.getPassword()))
+                .enabled(false) // inactive until verified
+                .createdAt(LocalDateTime.now())
+                .build();
 
-            // Upload image to Cloudinary
-            if (file != null && !file.isEmpty()) {
-                Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                        ObjectUtils.asMap(
-                                "folder", "Customers",// folder name
-                                "public_id", signUpRequest.getEmail(),//file name
-                                "overwrite", true,
-                                "resource_type", "image"
-                        )
-                );
-                String imageUrl = (String) uploadResult.get("secure_url");
-                user.setProfileImageUrl(imageUrl);
-            }
+        // Upload image to Cloudinary
+        String imageUrl = cloudinaryService.uploadImage(file, "Customers", signUpRequest.getEmail());
 
-    //save user to DB
-    usersRepo.save(user);
+        if (imageUrl != null) {
+            user.setProfileImageUrl(imageUrl);
+        }
+
+        //save user to DB
+        usersRepo.save(user);
 
 
-    // generate and store token in Redis
-    String token = UUID.randomUUID().toString();
-    redisTemplate.opsForValue().set(VERIFY_EMAIL_PREFIX + token, user.getEmail(), Duration.ofHours(24));
+        // generate and store token in Redis
+        String token = UUID.randomUUID().toString();
+        redisTemplate.opsForValue().set(VERIFY_EMAIL_PREFIX + token, user.getEmail(), Duration.ofHours(24));
 
 
-    // send verification email (change the URL depending on your deployment(frontend(3000) or backend(8080)) )
-    String verificationLink = "http://localhost:8080/api/v1/auth/verify-email?token=" + token;
-    String body = "Hello " + user.getFirstName() + ",\n\n" +
-            "Click the link to verify your account:\n" + verificationLink +
-            "\n\nIf you did not register, ignore this email.";
-    emailService.sendEmail(user.getEmail(), "Verify your account", body);
+        // send verification email (change the URL depending on your deployment(frontend(3000) or backend(8080)) )
+        String verificationLink = "http://localhost:8080/api/v1/auth/verify-email?token=" + token;
+        String body = "Hello " + user.getFirstName() + ",\n\n" +
+                "Click the link to verify your account:\n" + verificationLink +
+                "\n\nIf you did not register, ignore this email.";
+        emailService.sendEmail(user.getEmail(), "Verify your account", body);
 
-    return new RegisterResponse("User registered. Please check your email for verification." ,token);
-}
-
-
+        return new RegisterResponse("User registered. Please check your email for verification.", token);
+    }
 
 
     /**
      * Verify a user's email address.
-     *
+     * <p>
      * Validates the verification token sent to the user's email.
      * If valid and not expired, the user account is activated.
      *
@@ -172,11 +152,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
-
     /**
      * Authenticate a user and generate JWT tokens.
-     *
+     * <p>
      * Validates user credentials using Spring Security authentication.
      * If successful, generates an access token and a refresh token.
      *
@@ -206,24 +184,24 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        return new LoginResponse (
-            "Login successful",
+        return new LoginResponse(
+                "Login successful",
                 token, refreshToken,
-            user.getEmail(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.getProfileImageUrl(),
-            user.getRole()
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getProfileImageUrl(),
+                user.getRole()
         );
     }
 
 
     /**
      * Refresh an expired access token.
-     *
+     * <p>
      * Validates the provided refresh token and issues a new access token
      * while reusing the same refresh token.
-     *
+     * <p>
      * This method does not require database-backed refresh tokens
      * and follows a stateless JWT approach.
      *
@@ -272,21 +250,20 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
     /**
      * Logout the current user.
-     *
+     * <p>
      * In a stateless JWT setup, logout is handled client-side by
      * deleting the access and refresh tokens.
      * We also blacklist the token in Redis to prevent further usage until expiry.
      *
-     * @param accessToken authenticated user's access token
+     * @param accessToken  authenticated user's access token
      * @param refreshToken optional refresh token
      * @return message confirming logout
      */
     @Override
     public MessageResponse logout(String accessToken, String refreshToken) {
-        
+
         // 1. Blacklist Access Token
         if (accessToken != null && !accessToken.isEmpty()) {
             try {
@@ -302,28 +279,27 @@ public class AuthServiceImpl implements AuthService {
 
         // 2. Blacklist Refresh Token (if provided)
         if (refreshToken != null && !refreshToken.isEmpty()) {
-             try {
+            try {
                 java.util.Date expiration = jwtService.extractExpiration(refreshToken);
                 long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;
                 if (ttl > 0) {
                     tokenBlacklistService.blacklistToken(refreshToken, ttl);
                 }
-             } catch (Exception e) {
-                 // If token is invalid or expired, no need to blacklist
-             }
+            } catch (Exception e) {
+                // If token is invalid or expired, no need to blacklist
+            }
         }
-        
+
         return new MessageResponse("Logged out successfully");
     }
 
 
-
     /**
      * Update the authenticated user's password.
-     *
+     * <p>
      * Verifies the old password before updating to a new encrypted password.
      *
-     * @param request request containing old and new passwords
+     * @param request          request containing old and new passwords
      * @param currentUserEmail authenticated user's email
      * @return message indicating success
      */
@@ -347,17 +323,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
     /**
      * Update the authenticated user's profile.
-     *
+     * <p>
      * Allows updating first name, last name, and profile image.
      * Profile images are uploaded to Cloudinary.
      *
      * @param userEmail authenticated user's email
      * @param firstName optional new first name
-     * @param lastName optional new last name
-     * @param file optional new profile image
+     * @param lastName  optional new last name
+     * @param file      optional new profile image
      * @return response containing updated profile data
      * @throws IOException if image upload fails
      */
@@ -396,9 +371,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
-
-
     /**
      * Retrieve the authenticated user's profile.
      *
@@ -418,10 +390,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
     /**
      * Permanently delete the authenticated user's account.
-     *
+     * <p>
      * Removes the user and any associated verification tokens.
      *
      * @param email authenticated user's email
@@ -433,24 +404,23 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
         usersRepo.delete(user);
         return new MessageResponse(
-          " User Deleted Successfully :( "
+                " User Deleted Successfully :( "
         );
     }
 
 
-
     /**
      * Request an email address update.
-     *
+     * <p>
      * Sends a verification email to the new email address.
      * The change is only applied after verification.
      *
      * @param currentEmail user's current email
-     * @param newEmail requested new email
+     * @param newEmail     requested new email
      * @return response indicating verification email was sent
      */
     @Transactional
-    public UpdateEmailRequest requestEmailUpdate(String currentEmail, String newEmail) {
+    public UpdateEmailInitiateResponse requestEmailUpdate(String currentEmail, String newEmail) {
         Users user = usersRepo.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -458,7 +428,7 @@ public class AuthServiceImpl implements AuthService {
         if (usersRepo.findByEmail(newEmail).isPresent()) {
             throw new EmailAlreadyUsedException("The new email is already in use.");
         }
-        
+
         // Generate verification token
         String token = UUID.randomUUID().toString();
         // Store currentEmail:newEmail to know which user to update and what is the new email
@@ -472,7 +442,7 @@ public class AuthServiceImpl implements AuthService {
                 "\n\nIf you did not try to change your email , ignore this email.";
         emailService.sendEmail(newEmail, "Verify your email", "Click to verify: " + body);
 
-        return new UpdateEmailRequest(
+        return new UpdateEmailInitiateResponse(
                 "Verification email sent. Please check your inbox to confirm your new email.",
                 newEmail,
                 token
@@ -481,12 +451,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
-
-
     /**
      * Verify and apply a pending email update.
-     *
+     * <p>
      * Validates the verification token and updates the user's email address.
      *
      * @param tokenStr email update verification token
@@ -508,22 +475,20 @@ public class AuthServiceImpl implements AuthService {
 
         Users user = usersRepo.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-                
+
         user.setEmail(newEmail);
         usersRepo.save(user);
-        
+
         // Delete token from Redis after use
         redisTemplate.delete(UPDATE_EMAIL_PREFIX + tokenStr);
-        
-        return new UpdateEmailResponse("Email updated successfully" , user.getEmail());
+
+        return new UpdateEmailResponse("Email updated successfully", user.getEmail());
     }
-
-
 
 
     /**
      * Retrieve all users.
-     *
+     * <p>
      * Intended for development or administrative use.
      *
      * @return list of all users
@@ -533,12 +498,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
 
-
-
-
     /**
      * Initiate the password reset process.
-     *
+     * <p>
      * Generates a one-time password (OTP), stores it temporarily,
      * and sends it to the user's email.
      * <p>
@@ -581,15 +543,13 @@ public class AuthServiceImpl implements AuthService {
                 "This code expires in 15 minutes.";
         emailService.sendEmail(user.getEmail(), "Password Reset OTP", body);
 
-        return new ForgetPasswordResponse("OTP sent successfully. Please check your inbox." , otp);
+        return new ForgetPasswordResponse("OTP sent successfully. Please check your inbox.", otp);
     }
-
-
 
 
     /**
      * Reset the user password using OTP verification.
-     *
+     * <p>
      * Validates the OTP and updates the user's password if valid.
      * OTP is deleted after successful use.
      *
@@ -609,7 +569,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!storedOtp.equals(request.getOtp())) {
-             throw new InvalidOtpException("Invalid OTP");
+            throw new InvalidOtpException("Invalid OTP");
         }
 
         // update password
@@ -618,7 +578,7 @@ public class AuthServiceImpl implements AuthService {
 
         // delete OTP after successful use
         redisTemplate.delete(otpKey);
-        
+
         // Clear rate limit on success
         redisTemplate.delete(RESET_ATTEMPT_PREFIX + request.getEmail());
 

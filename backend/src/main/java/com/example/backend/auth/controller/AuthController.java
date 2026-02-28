@@ -43,14 +43,10 @@ public class AuthController {
     )
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResponse> register(
-            @Parameter(description = "the user's first name") @RequestParam String firstName,
-            @Parameter(description = "the user's last name") @RequestParam String lastName,
-            @Parameter(description = "the user's email (used as unique identifier)") @RequestParam String email,
-            @Parameter(description = "the user's chosen password") @RequestParam String password,
-            @Parameter(description = "the role assigned to the user") @RequestParam Role role,
-            @Parameter(description = "optional profile image file") @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
+            @Valid @ModelAttribute SignUpRequest dto,
+            @Parameter(description = "optional profile image file")
+            @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
 
-        SignUpRequest dto = new SignUpRequest(firstName, lastName, email, password, role);
         RegisterResponse response = authService.register(dto, file);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -167,10 +163,11 @@ public class AuthController {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @PostMapping("/update-email")
-    public ResponseEntity<UpdateEmailRequest> requestEmailUpdate(
+    public ResponseEntity<UpdateEmailInitiateResponse> requestEmailUpdate(
             @Parameter(description = "contains the new email address") @Valid @RequestBody UpdateEmailRequest request,
             @Parameter(hidden = true) Authentication authentication) {
-        UpdateEmailRequest resp = authService.requestEmailUpdate(authentication.getName(), request.getNewEmail());
+
+        UpdateEmailInitiateResponse resp = authService.requestEmailUpdate(authentication.getName(), request.getNewEmail());
         return ResponseEntity.accepted().body(resp);
     }
 

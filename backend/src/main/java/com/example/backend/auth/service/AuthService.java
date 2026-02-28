@@ -23,7 +23,7 @@ public interface AuthService {
 
     MessageResponse deleteCurrentUser(String email);
 
-    UpdateEmailRequest requestEmailUpdate(String currentEmail, String newEmail);
+    UpdateEmailInitiateResponse requestEmailUpdate(String currentEmail, String newEmail);
 
     UpdateEmailResponse verifyEmailUpdate(String tokenStr);
 

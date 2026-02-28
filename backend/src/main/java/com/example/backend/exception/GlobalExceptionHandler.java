@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j; // Import Lombok Slf4j
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -386,6 +387,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+
+        return build(HttpStatus.FORBIDDEN, "You do not have permission to access this resource.");
+    }
+
     // fallback - catches everything else
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleAll(Exception ex) {
@@ -394,6 +403,8 @@ public class GlobalExceptionHandler {
 
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong: " + ex.getMessage());
     }
+
+
 
     private ResponseEntity<?> build(HttpStatus status, String message) {
         Map<String, Object> body = Map.of(
