@@ -4,6 +4,7 @@ import com.example.backend.product.dto.ProductRequest;
 import com.example.backend.product.dto.ProductResponse;
 import com.example.backend.product.service.ProductService;
 import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.product.specification.ProductFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 @SuppressWarnings("ALL")
@@ -74,6 +76,18 @@ public class ProductController {
     public ResponseEntity<ProductResponse> getProductById(
             @Parameter(description = "the UUID of the product") @PathVariable UUID id) {
         return ResponseEntity.ok(productService.getProductById(id));
+    }
+
+    @Operation(
+            summary = "Search and filter products.",
+            description = "Get a list of products based on various filter criteria like name, category, or price. All parameters are optional."
+    )
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductResponse>> getProductsByFilter(
+            @Parameter(description = "Filter criteria") @ModelAttribute ProductFilter filter) {
+
+        List<ProductResponse> responses = productService.getProductsByFilter(filter);
+        return ResponseEntity.ok(responses);
     }
 
 

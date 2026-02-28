@@ -14,6 +14,8 @@ import com.example.backend.product.service.ProductService;
 import com.example.backend.auth.dto.responses.MessageResponse;
 import com.example.backend.entity.Users;
 import com.example.backend.exception.ResourceNotFoundException;
+import com.example.backend.product.specification.ProductFilter;
+import com.example.backend.product.specification.ProductSpecification;
 import com.example.backend.repository.UsersRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -125,7 +128,28 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductOutOfStockException("Sorry, product is out of stock.");
         }
         return mapToResponse(product, "Product found successfully :D ");
+    }
 
+
+    /**
+     * Get a list of products based on filter criteria.
+     * (Axtarış və ya filterləmə üçün)
+     */
+    @Override
+    public List<ProductResponse> getProductsByFilter(ProductFilter filter) {
+        // Filterə uyğun məhsulları bazadan çəkirik
+        List<Product> products = repo.findAll(new ProductSpecification(filter));
+
+        if (products.isEmpty()) {
+            throw new ProductNotFoundException("No products found matching the given criteria.");
+        }
+
+        // Passiv və stoku bitmiş məhsulları istifadəçiyə göstərmirik
+        return products.stream()
+                .filter(product -> Boolean.TRUE.equals(product.getActive()))
+                .filter(product -> product.getStock() != null && product.getStock() > 0)
+                .map(product -> mapToResponse(product, "Product fetched successfully"))
+                .toList();
     }
 
 
