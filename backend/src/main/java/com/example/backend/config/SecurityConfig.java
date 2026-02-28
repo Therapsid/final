@@ -1,11 +1,12 @@
-package com.example.backend.auth.security;
+package com.example.backend.config;
 
 import com.example.backend.auth.jwt.JWTFilter;
+import com.example.backend.auth.security.RestAccessDeniedHandler;
+import com.example.backend.auth.security.RestAuthenticationEntryPoint;
 import com.example.backend.auth.service.UsersServices;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
