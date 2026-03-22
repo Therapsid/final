@@ -5,42 +5,21 @@ import com.example.backend.order.dto.response.OrderResponse;
 import com.example.backend.order.dto.response.OrderSummaryResponse;
 import com.example.backend.order.entity.Order;
 import com.example.backend.order.entity.OrderItem;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-import java.util.stream.Collectors;
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
+public interface OrderMapper {
 
-public final class OrderMapper {
+    OrderResponse toDto(Order order);
 
-    private OrderMapper() {
-    }
+    OrderSummaryResponse toSummaryDto(Order order);
 
-    public static OrderResponse toDto(Order o) {
-        OrderResponse dto = new OrderResponse();
-        dto.setId(o.getId());
-        dto.setTotalAmount(o.getTotalAmount());
-        dto.setStatus(o.getStatus());
-        dto.setShippingAddress(o.getShippingAddress());
-        dto.setCreatedAt(o.getCreatedAt());
-        dto.setUpdatedAt(o.getUpdatedAt());
-        dto.setItems(o.getItems().stream().map(OrderMapper::toItemDto).collect(Collectors.toList()));
-        return dto;
-    }
-
-    public static OrderSummaryResponse toSummaryDto(Order o) {
-        OrderSummaryResponse s = new OrderSummaryResponse();
-        s.setId(o.getId());
-        s.setTotalAmount(o.getTotalAmount());
-        s.setStatus(o.getStatus());
-        s.setCreatedAt(o.getCreatedAt());
-        return s;
-    }
-
-    public static OrderItemResponse toItemDto(OrderItem i) {
-        OrderItemResponse d = new OrderItemResponse();
-        d.setId(i.getId());
-        d.setProductId(i.getProduct().getId());
-        d.setProductName(i.getProduct().getName());
-        d.setQuantity(i.getQuantity());
-        d.setPriceAtPurchase(i.getPriceAtPurchase());
-        return d;
-    }
+    @Mapping(target = "productId", source = "product.id")
+    @Mapping(target = "productName", source = "product.name")
+    OrderItemResponse toItemDto(OrderItem item);
 }

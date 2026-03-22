@@ -9,6 +9,7 @@ import com.example.backend.seller.entity.SellerProfile;
 import com.example.backend.seller.entity.SellerRequest;
 import com.example.backend.seller.entity.SellerRequestStatus;
 import com.example.backend.seller.exception.SellerRequestException;
+import com.example.backend.seller.mapper.SellerMapper;
 import com.example.backend.seller.repository.SellerProfileRepo;
 import com.example.backend.seller.repository.SellerRequestRepo;
 import com.example.backend.seller.service.SellerService;
@@ -24,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,7 +39,7 @@ public class SellerServiceImpl implements SellerService {
     private final Cloudinary cloudinary;
     private final CloudinaryService cloudinaryService;
     private final EmailService emailService;
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private final SellerMapper sellerMapper;
 
     @Override
     @Transactional
@@ -62,7 +62,7 @@ public class SellerServiceImpl implements SellerService {
                 .createdAt(LocalDateTime.now())
                 .build();
         sellerRequestRepo.save(request);
-        return toDto(request);
+        return sellerMapper.toDto(request);
     }
 
     @Override
@@ -123,21 +123,7 @@ public class SellerServiceImpl implements SellerService {
     public List<SellerRequestResponse> getPendingRequests() {
         List<SellerRequest> pendingRequests = sellerRequestRepo.findAllByStatus(SellerRequestStatus.PENDING);
         return pendingRequests.stream()
-                .map(this::toDto)
+                .map(sellerMapper::toDto)
                 .toList();
-    }
-
-    private SellerRequestResponse toDto(SellerRequest r) {
-        return new SellerRequestResponse(
-                r.getId(),
-                r.getUser().getEmail(),
-                r.getStoreName(),
-                r.getDocumentUrl(),
-                r.getReason(),
-                r.getStatus(),
-                r.getCreatedAt().format(ISO),
-                r.getReviewedAt() != null ? r.getReviewedAt().format(ISO) : null,
-                r.getReviewedBy()
-        );
     }
 }

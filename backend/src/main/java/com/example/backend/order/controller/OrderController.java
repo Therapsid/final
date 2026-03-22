@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderMapper orderMapper;
 
     @Operation(
             summary = "Create an order from the current user's cart.",
@@ -43,7 +44,7 @@ public class OrderController {
     ) {
         String userEmail = authentication.getName();
         Order order = orderService.createOrderFromCart(userEmail, req.getShippingAddress());
-        return ResponseEntity.status(HttpStatus.CREATED).body(OrderMapper.toDto(order));
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderMapper.toDto(order));
     }
 
     @Operation(
@@ -63,7 +64,7 @@ public class OrderController {
                 request.getQuantity(),
                 request.getShippingAddress()
         );
-        return ResponseEntity.status(HttpStatus.CREATED).body(OrderMapper.toDto(order));
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderMapper.toDto(order));
     }
 
     @Operation(
@@ -78,7 +79,7 @@ public class OrderController {
     ) {
         String userEmail = authentication.getName();
         Page<Order> page = orderService.getOrdersForUser(userEmail, pageable);
-        Page<OrderSummaryResponse> dtoPage = page.map(OrderMapper::toSummaryDto);
+        Page<OrderSummaryResponse> dtoPage = page.map(orderMapper::toSummaryDto);
         return ResponseEntity.ok(dtoPage);
     }
 
@@ -94,7 +95,7 @@ public class OrderController {
     ) {
         String userEmail = authentication.getName();
         Order order = orderService.getOrderById(id, userEmail);
-        return ResponseEntity.ok(OrderMapper.toDto(order));
+        return ResponseEntity.ok(orderMapper.toDto(order));
     }
 
     @Operation(
