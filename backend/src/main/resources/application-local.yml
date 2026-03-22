@@ -1,0 +1,71 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/E_Commerence_DB
+    username: myuser
+    password: mypassword
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: myredispassword
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: valorant.vabeen@gmail.com
+    password: ljufcjfrttvlwfab
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: placeholder
+            client-secret: placeholder
+          github:
+            client-id: placeholder
+            client-secret: placeholder
+
+jwt:
+  secret: "++WwLhGs62vGtFlURYfoehTuE54hfi5AJcIO+WOQaaM="
+
+stripe:
+  secretKey: sk_test_51T0kR5A0UdJcCTK68l2S9y2ykXaxDK9CrmHGd4trLiMbKlwmO7PuMZUtM5kcpABguiqJmNlDGr3LFENWi410ANjC00rJ9mOnw7
+
+cloudinary:
+  cloud_name: dpi367qf8
+  api_key: "439547882448746"
+  api_secret: "W_R2q7z_ZhrkBtwfiG9BqOvM-PI"
+
+app:
+  base-url: http://localhost:8082
+
+payment:
+  session:
+    ttl:
+      minutes: 60
+  expire-check-cron: "0 */1 * * * *"
