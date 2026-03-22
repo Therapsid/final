@@ -1,8 +1,8 @@
 package com.example.backend.cart.service.Impl;
-import com.example.backend.cart.dto.CartItemResponse;
 import com.example.backend.cart.dto.CartResponse;
 import com.example.backend.cart.entity.Cart;
 import com.example.backend.cart.entity.CartItem;
+import com.example.backend.cart.mapper.CartMapper;
 import com.example.backend.cart.repository.CartItemRepository;
 import com.example.backend.cart.repository.CartRepository;
 import com.example.backend.cart.service.CartService;
@@ -17,9 +17,7 @@ import com.example.backend.users.repository.UsersRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
 @SuppressWarnings("ALL")
 @RequiredArgsConstructor
 @Service
@@ -29,6 +27,7 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final UsersRepo usersRepository;
+    private final CartMapper cartMapper;
 
     @Override
     @Transactional
@@ -76,7 +75,7 @@ public class CartServiceImpl implements CartService {
             cartRepository.save(cart);
         }
 
-        return mapToCartResponse(cart);
+        return cartMapper.toResponse(cart);
     }
 
     @Override
@@ -95,7 +94,7 @@ public class CartServiceImpl implements CartService {
             cart.getItems().remove(item);
             cartItemRepository.delete(item);
             cartRepository.save(cart);
-            return mapToCartResponse(cart);
+            return cartMapper.toResponse(cart);
         }
 
         Product product = item.getProduct();
@@ -105,7 +104,7 @@ public class CartServiceImpl implements CartService {
 
         item.setQuantity(quantity);
         cartItemRepository.save(item);
-        return mapToCartResponse(cart);
+        return cartMapper.toResponse(cart);
     }
 
     @Override
@@ -126,7 +125,7 @@ public class CartServiceImpl implements CartService {
             cartRepository.save(cart);
         }
 
-        return mapToCartResponse(cart);
+        return cartMapper.toResponse(cart);
     }
 
     @Override
@@ -141,7 +140,7 @@ public class CartServiceImpl implements CartService {
             c.setItems(new ArrayList<>());
             return c;
         });
-        return mapToCartResponse(cart);
+        return cartMapper.toResponse(cart);
     }
 
     @Override
@@ -156,30 +155,5 @@ public class CartServiceImpl implements CartService {
             cartRepository.save(cart);
         });
         return new MessageResponse(" Cart cleared successfully.");
-    }
-
-private CartResponse mapToCartResponse(Cart cart) {
-        List<CartItemResponse> items = (cart.getItems() == null ? Collections.emptyList() : cart.getItems()).stream()
-                .map(o -> {
-                    CartItem i = (CartItem) o;
-                    return CartItemResponse.builder()
-                            .productId(i.getProduct().getId())
-                            .productName(i.getProduct().getName())
-                            .price(i.getProduct().getPrice())
-                            .quantity(i.getQuantity())
-                            .build();
-                }).collect(Collectors.toList());
-        BigDecimal total = (cart.getItems() == null ? Collections.emptyList() : cart.getItems()).stream()
-                .map(o -> {
-                    CartItem i = (CartItem) o;
-                    BigDecimal price = i.getProduct().getPrice() == null ? BigDecimal.ZERO : i.getProduct().getPrice();
-                    return price.multiply(BigDecimal.valueOf(i.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return CartResponse.builder()
-                .cartId(cart.getId())
-                .items(items)
-                .totalPrice(total.doubleValue())
-                .build();
     }
 }

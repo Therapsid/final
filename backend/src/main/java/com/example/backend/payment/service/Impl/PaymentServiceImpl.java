@@ -9,6 +9,7 @@ import com.example.backend.payment.entity.Payment;
 import com.example.backend.payment.exception.OrderPaymentNotAllowedException;
 import com.example.backend.payment.exception.PaymentNotFoundException;
 import com.example.backend.payment.exception.StripeOperationException;
+import com.example.backend.payment.mapper.PaymentMapper;
 import com.example.backend.payment.repository.PaymentRepository;
 import com.example.backend.payment.service.PaymentService;
 import com.example.backend.payment.util.StripeUtils;
@@ -33,6 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 private final OrderRepository orderRepository;
 private final PaymentRepository paymentRepository;
+private final PaymentMapper paymentMapper;
 
     @Value("${stripe.secretKey}")
     private String stripeApiKey;
@@ -97,7 +99,7 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
         payment.setExpiresAt(payment.getCreatedAt().plusMinutes(60));
         paymentRepository.save(payment);
         order.setStatus(OrderStatus.DELIVERED);
-        return  PaymentCreateResponse.of(session.getId(), session.getUrl());
+        return paymentMapper.toCreateResponse(session.getId(), session.getUrl());
     }
 
     @Override
@@ -146,7 +148,7 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
         }
 
         if (!paid) {
-            return PaymentConfirmDto.pending("Payment not completed yet");
+            return paymentMapper.pending("Payment not completed yet");
         }
 
         if (order.getStatus() != OrderStatus.PAID) {
@@ -183,7 +185,7 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
 
             paymentRepository.save(p);
         });
-        return PaymentConfirmDto.ok("Payment confirmed successfully");
+        return paymentMapper.ok("Payment confirmed successfully");
     }
 
     @Override

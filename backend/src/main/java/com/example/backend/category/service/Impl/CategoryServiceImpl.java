@@ -5,15 +5,14 @@ import com.example.backend.category.dto.CategoryRequest;
 import com.example.backend.category.dto.CategoryResponse;
 import com.example.backend.category.entity.Category;
 import com.example.backend.category.exception.*;
+import com.example.backend.category.mapper.CategoryMapper;
 import com.example.backend.category.repository.CategoryRepository;
 import com.example.backend.category.service.CategoryService;
-import com.example.backend.product.dto.ProductResponse;
 import com.example.backend.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +23,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
     private final ProductRepository productRepository;
+    private final CategoryMapper categoryMapper;
 
     @Override
     public CategoryResponse createCategory(CategoryRequest request) {
@@ -42,7 +42,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         categoryRepository.save(category);
-        return mapToResponse(category, "Category created successfully");
+        return categoryMapper.toResponse(category, "Category created successfully");
     }
 
     @Override
@@ -50,7 +50,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id " + id));
-        return mapToResponse(category, "Category found successfully");
+        return categoryMapper.toResponse(category, "Category found successfully");
     }
 
     @SuppressWarnings("SimplifyStreamApiCallChains")
@@ -62,7 +62,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .filter(c -> c.getParent() == null)
                 .collect(Collectors.toList());
         return rootCategories.stream()
-                .map(c -> mapToResponse(c, ""))
+                .map(c -> categoryMapper.toResponse(c, ""))
                 .collect(Collectors.toList());
     }
 
@@ -102,7 +102,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         categoryRepository.save(category);
-        return mapToResponse(category, "Category updated successfully");
+        return categoryMapper.toResponse(category, "Category updated successfully");
     }
 
     @Override
@@ -120,39 +120,5 @@ public class CategoryServiceImpl implements CategoryService {
 
         categoryRepository.deleteById(id);
         return new MessageResponse("Category deleted successfully");
-    }
-
-    private CategoryResponse mapToResponse(Category c, String message) {
-        Long parentId = c.getParent() != null ? c.getParent().getId() : null;
-        String parentName = c.getParent() != null ? c.getParent().getName() : null;
-        List<CategoryResponse> subCat = (c.getSubCategories() == null ? Collections.emptyList() : c.getSubCategories())
-                .stream()
-                .map(sub -> mapToResponse((Category) sub, ""))
-                .collect(Collectors.toList());
-        List<ProductResponse> products = c.getProducts() != null
-                ? c.getProducts().stream()
-                .map(p -> ProductResponse.builder()
-                        .id(p.getId())
-                        .name(p.getName())
-                        .description(p.getDescription())
-                        .price(p.getPrice())
-                        .stock(p.getStock())
-                        .active(p.getActive())
-                        .imageUrl(p.getImageUrl())
-                        .categoryId(c.getId())
-                        .categoryName(c.getName())
-                        .build())
-                .collect(Collectors.toList())
-                : Collections.emptyList();
-        return CategoryResponse.builder()
-                .message(message)
-                .id(c.getId())
-                .name(c.getName())
-                .description(c.getDescription())
-                .parentId(parentId)
-                .parentName(parentName)
-                .subCategories(subCat)
-                .products(products)
-                .build();
     }
 }

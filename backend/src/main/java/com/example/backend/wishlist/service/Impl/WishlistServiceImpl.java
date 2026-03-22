@@ -6,10 +6,10 @@ import com.example.backend.product.exception.ProductNotFoundException;
 import com.example.backend.product.repository.ProductRepository;
 import com.example.backend.users.entity.Users;
 import com.example.backend.users.repository.UsersRepo;
-import com.example.backend.wishlist.dto.ProductDto;
 import com.example.backend.wishlist.dto.WishlistResponse;
 import com.example.backend.wishlist.entity.Wishlist;
 import com.example.backend.wishlist.exception.WishlistNotFoundException;
+import com.example.backend.wishlist.mapper.WishlistMapper;
 import com.example.backend.wishlist.repository.WishlistRepository;
 import com.example.backend.wishlist.service.WishlistService;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +26,7 @@ public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
     private final ProductRepository productRepository;
     private final UsersRepo usersRepository;
+    private final WishlistMapper wishlistMapper;
 
     @Override
     @Transactional
@@ -50,7 +48,7 @@ public class WishlistServiceImpl implements WishlistService {
             wishlistRepository.save(wishlist);
         }
 
-        return mapToWishlistResponse(wishlist);
+        return wishlistMapper.toResponse(wishlist);
     }
 
     @Override
@@ -62,7 +60,7 @@ public class WishlistServiceImpl implements WishlistService {
                 .orElseThrow(() -> new RuntimeException("Wishlist not found"));
         wishlist.getProducts().removeIf(p -> p.getId().equals(productId));
         wishlistRepository.save(wishlist);
-        return mapToWishlistResponse(wishlist);
+        return wishlistMapper.toResponse(wishlist);
     }
 
     @Override
@@ -76,7 +74,7 @@ public class WishlistServiceImpl implements WishlistService {
             w.setProducts(new ArrayList<>());
             return w;
         });
-        return mapToWishlistResponse(wishlist);
+        return wishlistMapper.toResponse(wishlist);
     }
 
     @Override
@@ -87,26 +85,6 @@ public class WishlistServiceImpl implements WishlistService {
                 .orElseThrow(() -> new WishlistNotFoundException("Wishlist not found"));
         wishlist.getProducts().clear();
         wishlistRepository.save(wishlist);
-        return mapToWishlistResponse(wishlist);
-    }
-
-    private WishlistResponse mapToWishlistResponse(Wishlist w) {
-        List<ProductDto> products = (w.getProducts() == null ? Collections.emptyList() : w.getProducts())
-                .stream()
-                .map(o -> {
-                    Product p = (Product) o;
-                    return ProductDto.builder()
-                            .id(p.getId())
-                            .name(p.getName())
-                            .description(p.getDescription())
-                            .price(p.getPrice() != null ? p.getPrice().doubleValue() : 0.0)
-                            .imageUrl(p.getImageUrl())
-                            .build();
-                })
-                .collect(Collectors.toList());
-        return WishlistResponse.builder()
-                .wishlistId(w.getId())
-                .products(products)
-                .build();
+        return wishlistMapper.toResponse(wishlist);
     }
 }
