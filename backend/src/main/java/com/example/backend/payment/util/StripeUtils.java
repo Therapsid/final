@@ -1,4 +1,4 @@
-package com.example.backend.payment.utils;
+package com.example.backend.payment.util;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;

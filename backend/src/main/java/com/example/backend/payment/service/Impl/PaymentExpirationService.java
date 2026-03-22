@@ -1,4 +1,5 @@
 package com.example.backend.payment.service.Impl;
+
 import com.example.backend.payment.entity.Payment;
 import com.example.backend.payment.repository.PaymentRepository;
 import com.stripe.model.PaymentIntent;
@@ -8,15 +9,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-
 @Slf4j
 public class PaymentExpirationService {
 
-private final PaymentRepository paymentRepository;
+    private final PaymentRepository paymentRepository;
 
     @Value("${payment.session.ttl.minutes:60}")
     private long ttlMinutes;

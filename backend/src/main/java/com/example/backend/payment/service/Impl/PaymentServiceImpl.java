@@ -11,7 +11,7 @@ import com.example.backend.payment.exception.PaymentNotFoundException;
 import com.example.backend.payment.exception.StripeOperationException;
 import com.example.backend.payment.repository.PaymentRepository;
 import com.example.backend.payment.service.PaymentService;
-import com.example.backend.payment.utils.StripeUtils;
+import com.example.backend.payment.util.StripeUtils;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -28,12 +28,10 @@ import java.time.OffsetDateTime;
 @SuppressWarnings("ALL")
 @Slf4j
 @Service
-
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
 private final OrderRepository orderRepository;
-
 private final PaymentRepository paymentRepository;
 
     @Value("${stripe.secretKey}")

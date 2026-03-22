@@ -9,6 +9,7 @@ import com.example.backend.product.dto.ProductRequest;
 import com.example.backend.product.dto.ProductResponse;
 import com.example.backend.product.entity.Product;
 import com.example.backend.product.exception.*;
+import com.example.backend.product.mapper.ProductMapper;
 import com.example.backend.product.repository.ProductRepository;
 import com.example.backend.product.service.ProductService;
 import com.example.backend.auth.dto.responses.MessageResponse;
@@ -42,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepo;
     private final Cloudinary cloudinary;
     private final UsersRepo usersRepository;
+    private final ProductMapper productMapper;
 
     @Override
     public ProductResponse createProduct(ProductRequest request, MultipartFile file, String sellerEmail) throws IOException {
@@ -84,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         repo.save(product);
-        return mapToResponse(product, "Product created successfully :<>:");
+        return productMapper.toResponse(product, "Product created successfully :<>:");
     }
 
     @Override
@@ -99,7 +101,7 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductOutOfStockException("Sorry, product is out of stock.");
         }
 
-        return mapToResponse(product, "Product found successfully :D ");
+        return productMapper.toResponse(product, "Product found successfully :D ");
     }
 
     @Override
@@ -112,7 +114,7 @@ public class ProductServiceImpl implements ProductService {
         return products.stream()
                 .filter(product -> Boolean.TRUE.equals(product.getActive()))
                 .filter(product -> product.getStock() != null && product.getStock() > 0)
-                .map(product -> mapToResponse(product, "Product fetched successfully"))
+                .map(product -> productMapper.toResponse(product, "Product fetched successfully"))
                 .toList();
     }
 
@@ -124,7 +126,7 @@ public class ProductServiceImpl implements ProductService {
             return Page.empty(pageable);
         }
 
-        return products.map(p -> mapToResponse(p, "Products found successfully :D "));
+        return products.map(p -> productMapper.toResponse(p, "Products found successfully :D "));
     }
 
     @Override
@@ -187,7 +189,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         repo.save(product);
-        return mapToResponse(product, "Product updated successfully");
+        return productMapper.toResponse(product, "Product updated successfully");
     }
 
     @Override
@@ -200,28 +202,6 @@ public class ProductServiceImpl implements ProductService {
 
         repo.deleteById(id);
         return new MessageResponse("Product deleted successfully");
-    }
-
-    private ProductResponse mapToResponse(Product p, String message) {
-        Long categoryId = null;
-        String categoryName = null;
-        if (p.getCategory() != null) {
-            categoryId = p.getCategory().getId();
-            categoryName = p.getCategory().getName();
-        }
-
-        return ProductResponse.builder()
-                .message(message)
-                .id(p.getId())
-                .name(p.getName())
-                .description(p.getDescription())
-                .price(p.getPrice())
-                .categoryId(categoryId)
-                .categoryName(categoryName)
-                .stock(p.getStock())
-                .active(p.getActive())
-                .imageUrl(p.getImageUrl())
-                .build();
     }
 
     private boolean isCurrentUserAdmin() {
