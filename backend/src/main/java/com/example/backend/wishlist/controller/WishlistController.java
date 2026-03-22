@@ -18,14 +18,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Wishlist", description = "Endpoints for managing user wishlist")
 public class WishlistController {
-    private final WishlistService wishlistService;
 
+    private final WishlistService wishlistService;
 
     @Operation(
             summary = "Add a product to the authenticated user's wishlist.",
             description = "Add a product to the authenticated user's wishlist.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+
     @PostMapping("/add/{productId}")
     public ResponseEntity<WishlistResponse> addToWishlist(
             @Parameter(hidden = true) Authentication auth,
@@ -33,12 +34,12 @@ public class WishlistController {
         return ResponseEntity.ok(wishlistService.addToWishlist(auth.getName(), productId));
     }
 
-
     @Operation(
             summary = "Remove a product from the authenticated user's wishlist.",
             description = "Remove a product from the authenticated user's wishlist.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+
     @DeleteMapping("/remove/{productId}")
     public ResponseEntity<WishlistResponse> removeFromWishlist(
             @Parameter(hidden = true) Authentication auth,
@@ -46,23 +47,23 @@ public class WishlistController {
         return ResponseEntity.ok(wishlistService.removeFromWishlist(auth.getName(), productId));
     }
 
-
     @Operation(
             summary = "Retrieve the authenticated user's wishlist.",
             description = "Retrieve the authenticated user's wishlist.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+
     @GetMapping
     public ResponseEntity<WishlistResponse> getWishlist(@Parameter(hidden = true) Authentication auth) {
         return ResponseEntity.ok(wishlistService.getWishlist(auth.getName()));
     }
-
 
     @Operation(
             summary = "Clear all items from the authenticated user's wishlist.",
             description = "Clear all items from the authenticated user's wishlist.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+
     @DeleteMapping("/clear")
     public ResponseEntity<WishlistResponse> clearWishlist(@Parameter(hidden = true) Authentication authentication) {
         String email = authentication.getName();

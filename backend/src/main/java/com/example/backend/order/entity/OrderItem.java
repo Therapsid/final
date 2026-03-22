@@ -1,6 +1,5 @@
 package com.example.backend.order.entity;
 
-
 import com.example.backend.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,9 +14,11 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+
 @Builder
 public class OrderItem {
     @Id
+
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

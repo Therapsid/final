@@ -6,9 +6,7 @@ import com.example.backend.auth.dto.responses.MessageResponse;
 
 import java.util.List;
 
-
 public interface CategoryService {
-
     CategoryResponse createCategory(CategoryRequest request);
 
     CategoryResponse getCategoryById(Long id);

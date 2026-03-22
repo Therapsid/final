@@ -28,7 +28,6 @@ public class CloudinaryService {
                         "resource_type", "image"
                 )
         );
-
         return (String) uploadResult.get("secure_url");
     }
 
@@ -36,6 +35,7 @@ public class CloudinaryService {
         if (file == null || file.isEmpty()) {
             return null;
         }
+
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap(
                         "folder", folderName,

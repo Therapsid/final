@@ -1,9 +1,9 @@
 package com.example.backend.category.controller;
 
+import com.example.backend.auth.dto.responses.MessageResponse;
 import com.example.backend.category.dto.CategoryRequest;
 import com.example.backend.category.dto.CategoryResponse;
 import com.example.backend.category.service.CategoryService;
-import com.example.backend.auth.dto.responses.MessageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,7 +26,6 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-
     @Operation(
             summary = "Create a new category (ADMIN only).",
             description = "Create a new category (ADMIN only).",
@@ -35,7 +34,8 @@ public class CategoryController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> createCategory(
-            @Parameter(description = "the category data to create") @RequestBody @Valid CategoryRequest categoryRequest){
+            @Parameter(description = "the category data to create") @RequestBody @Valid CategoryRequest categoryRequest
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.createCategory(categoryRequest));
     }
 
@@ -45,17 +45,17 @@ public class CategoryController {
     )
     @GetMapping("/{id}")
     public ResponseEntity<CategoryResponse> getCategoryById(
-            @Parameter(description = "the ID of the category to retrieve") @PathVariable Long id){
+            @Parameter(description = "the ID of the category to retrieve") @PathVariable Long id
+    ) {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
-
 
     @Operation(
             summary = "Get all categories.",
             description = "Get all categories."
     )
     @GetMapping
-    public ResponseEntity<List<CategoryResponse>> getAllCategories(){
+    public ResponseEntity<List<CategoryResponse>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
 
@@ -68,10 +68,10 @@ public class CategoryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> updateCategory(
             @Parameter(description = "the ID of the category to update") @PathVariable Long id,
-            @Parameter(description = "the new category data") @RequestBody @Valid CategoryRequest categoryRequest){
+            @Parameter(description = "the new category data") @RequestBody @Valid CategoryRequest categoryRequest
+    ) {
         return ResponseEntity.ok(categoryService.updateCategory(id, categoryRequest));
     }
-
 
     @Operation(
             summary = "Delete a category by ID (ADMIN only).",
@@ -81,7 +81,8 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteCategory(
-            @Parameter(description = "the ID of the category to delete") @PathVariable Long id){
+            @Parameter(description = "the ID of the category to delete") @PathVariable Long id
+    ) {
         return ResponseEntity.ok(categoryService.deleteCategory(id));
     }
 }

@@ -1,16 +1,17 @@
 package com.example.backend.order.mapper;
 
-
-import com.example.backend.order.dto.OrderItemResponse;
-import com.example.backend.order.dto.OrderResponse;
-import com.example.backend.order.dto.OrderSummaryResponse;
+import com.example.backend.order.dto.response.OrderItemResponse;
+import com.example.backend.order.dto.response.OrderResponse;
+import com.example.backend.order.dto.response.OrderSummaryResponse;
 import com.example.backend.order.entity.Order;
 import com.example.backend.order.entity.OrderItem;
 
 import java.util.stream.Collectors;
 
 public final class OrderMapper {
-    private OrderMapper() {}
+
+    private OrderMapper() {
+    }
 
     public static OrderResponse toDto(Order o) {
         OrderResponse dto = new OrderResponse();

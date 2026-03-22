@@ -1,6 +1,6 @@
 package com.example.backend.cart.entity;
 
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,6 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Table(name = "carts")
 public class Cart {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

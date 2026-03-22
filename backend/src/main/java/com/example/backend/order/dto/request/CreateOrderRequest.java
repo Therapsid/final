@@ -1,4 +1,4 @@
-package com.example.backend.order.dto;
+package com.example.backend.order.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -9,8 +9,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+
 @Builder
 public class CreateOrderRequest {
+
     @NotBlank
     private String shippingAddress;
 }

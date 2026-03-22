@@ -1,9 +1,5 @@
 version: '3.8'
-
 services:
-  # ------------------------------
-  # PostgreSQL Database Service
-  # ------------------------------
   postgres_db:
     image: postgres:15-alpine
     container_name: ecom_db
@@ -25,10 +21,6 @@ services:
       retries: 5
     networks:
       - ecom_network
-
-  # ------------------------------
-  # Redis Service
-  # ------------------------------
   redis:
     image: redis:7-alpine
     container_name: ecom_redis
@@ -38,10 +30,6 @@ services:
       - "6379:6379"
     networks:
       - ecom_network
-
-  # ------------------------------
-  # Backend Spring Boot Service
-  # ------------------------------
   backend:
     build:
       context: .
@@ -60,26 +48,17 @@ services:
     env_file:
       - .env
     environment:
-      # --- DATABASE ---
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-
-      # --- REDIS ---
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
-
-      # --- JPA ---
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_SHOW_SQL: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-
-      # --- JWT ---
       JWT_SECRET: ${JWT_SECRET}
-
-      # --- EMAIL ---
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
@@ -90,29 +69,19 @@ services:
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT: 5000
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_TIMEOUT: 5000
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_WRITETIMEOUT: 5000
-
-      # --- CLOUDINARY ---
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-
-      # --- OAUTH ---
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-
-      # --- STRIPE ---
       STRIPE_SECRETKEY: ${STRIPE_SECRET_KEY}
-
-      # --- CUSTOM APP PROPERTIES  ---
       APP_BASE_URL: ${APP_BASE_URL}
       PAYMENT_SESSION_TTL_MINUTES: ${PAYMENT_TTL}
       PAYMENT_EXPIRE_CHECK_CRON: ${PAYMENT_CRON}
-
 volumes:
   postgres_data:
-
 networks:
   ecom_network:
     driver: bridge

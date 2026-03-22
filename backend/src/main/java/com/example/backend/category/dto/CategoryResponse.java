@@ -1,6 +1,5 @@
 package com.example.backend.category.dto;
 
-
 import com.example.backend.product.dto.ProductResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,14 +13,20 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CategoryResponse {
+
     private String message;
+
     private Long id;
+
     private String name;
+
     private String description;
+
     private Long parentId;
+
     private String parentName;
-    private List<CategoryResponse> subCategories; // nested children
-    private List<ProductResponse> products; // products in this category
 
+    private List<CategoryResponse> subCategories;
+
+    private List<ProductResponse> products;
 }
-

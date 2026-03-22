@@ -14,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Table(name = "cart_items")
 public class CartItem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -27,5 +28,5 @@ public class CartItem {
     private Product product;
 
     @Column(nullable = false)
-    private Integer quantity;  // quantity of the product in the cart
+    private Integer quantity;
 }

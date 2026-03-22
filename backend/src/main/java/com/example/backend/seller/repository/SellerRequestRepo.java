@@ -1,6 +1,6 @@
 package com.example.backend.seller.repository;
 
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import com.example.backend.seller.entity.SellerRequest;
 import com.example.backend.seller.entity.SellerRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;

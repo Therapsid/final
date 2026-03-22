@@ -12,7 +12,5 @@ import java.util.UUID;
 public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpecificationExecutor<Product> {
     boolean existsByNameIgnoreCase(String name);
 
-    // check if their is a product in the category (for category deletion)
     boolean existsByCategory(Category category);
-
 }

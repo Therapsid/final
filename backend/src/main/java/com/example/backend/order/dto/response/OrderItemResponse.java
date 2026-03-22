@@ -1,4 +1,4 @@
-package com.example.backend.order.dto;
+package com.example.backend.order.dto.response;
 
 import lombok.Data;
 
@@ -7,9 +7,14 @@ import java.util.UUID;
 
 @Data
 public class OrderItemResponse {
+
     private Long id;
+
     private UUID productId;
+
     private String productName;
+
     private Integer quantity;
+
     private BigDecimal priceAtPurchase;
 }

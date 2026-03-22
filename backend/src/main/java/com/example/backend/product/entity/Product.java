@@ -1,7 +1,7 @@
 package com.example.backend.product.entity;
 
 import com.example.backend.category.entity.Category;
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,7 +10,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 
 @Entity
 @Table(name = "products")
@@ -35,19 +34,17 @@ public class Product {
     private BigDecimal price;
 
     @Column(nullable = false)
-    private Integer stock; // quantity available
+    private Integer stock;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    // image URL (Cloudinary)
     private String imageUrl;
 
     @Column(nullable = false)
     private Boolean active = true;
 
-    // owner of the product
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private Users seller;
@@ -59,5 +56,4 @@ public class Product {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
 }

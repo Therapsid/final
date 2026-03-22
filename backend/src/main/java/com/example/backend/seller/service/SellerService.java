@@ -8,8 +8,7 @@ import java.io.IOException;
 import java.util.List;
 
 public interface SellerService {
-
-    SellerRequestResponse requestSeller(String userEmail, String storeName,String reason , MultipartFile document) throws IOException;
+    SellerRequestResponse requestSeller(String userEmail, String storeName, String reason, MultipartFile document) throws IOException;
 
     MessageResponse approveRequest(Long requestId, String adminEmail);
 

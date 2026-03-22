@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateEmailResponse {
+
     private String message;
+
     private String newEmail;
 }

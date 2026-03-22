@@ -1,13 +1,13 @@
-package com.example.backend.order.dto;
+package com.example.backend.order.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class PayRequest {
+
     @NotBlank
     private String phoneNumber;
 
-    // idempotency key to prevent duplicate payment attempts.
     private String idempotencyKey;
 }

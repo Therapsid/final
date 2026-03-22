@@ -1,7 +1,7 @@
 package com.example.backend.wishlist.entity;
 
 import com.example.backend.product.entity.Product;
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,5 +31,6 @@ public class Wishlist {
             joinColumns = @JoinColumn(name = "wishlist_id"),
             inverseJoinColumns = @JoinColumn(name = "product_id")
     )
+
     private List<Product> products = new ArrayList<>();
 }

@@ -3,6 +3,7 @@ package com.example.backend.auth.dto.requests;
 import lombok.Data;
 
 @Data
-public class RefreshTokenReq {
+public class RefreshTokenRequest {
+
     private String token;
 }

@@ -1,7 +1,6 @@
 package com.example.backend.order.entity;
 
-
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +19,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Order {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -41,11 +42,17 @@ public class Order {
     private String shippingAddress;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @PrePersist
-    public void onCreate() { createdAt = LocalDateTime.now(); updatedAt = createdAt; }
+    public void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = createdAt;
+    }
 
     @PreUpdate
-    public void onUpdate() { updatedAt = LocalDateTime.now(); }
+    public void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

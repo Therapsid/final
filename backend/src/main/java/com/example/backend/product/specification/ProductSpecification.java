@@ -25,7 +25,6 @@ public class ProductSpecification implements Specification<Product> {
                                            CriteriaQuery<?> query,
                                            CriteriaBuilder criteriaBuilder) {
         List<Predicate> predicates = new ArrayList<>();
-
         UUID id = filter.getId();
         if (!ObjectUtils.isEmpty(id)) {
             predicates.add(criteriaBuilder.equal(root.get("id"), id));
@@ -57,7 +56,6 @@ public class ProductSpecification implements Specification<Product> {
         if (!ObjectUtils.isEmpty(maxPrice)) {
             predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("price"), maxPrice));
         }
-
 
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }

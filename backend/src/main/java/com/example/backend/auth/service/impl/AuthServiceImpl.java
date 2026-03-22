@@ -7,12 +7,12 @@ import com.example.backend.auth.dto.responses.*;
 import com.example.backend.auth.exception.*;
 import com.example.backend.auth.service.AuthService;
 import com.example.backend.auth.service.TokenBlacklistService;
-import com.example.backend.entity.Role;
-import com.example.backend.entity.Users;
 import com.example.backend.exception.InvalidTokenException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.TooManyRequestsException;
-import com.example.backend.repository.UsersRepo;
+import com.example.backend.users.entity.Role;
+import com.example.backend.users.entity.Users;
+import com.example.backend.users.repository.UsersRepo;
 import com.example.backend.util.CloudinaryService;
 import com.example.backend.util.EmailService;
 import jakarta.transaction.Transactional;
@@ -34,29 +34,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-
-/**
- * Authentication and user account service implementation.
- * <p>
- * Handles all authentication-related business logic including
- * - User registration and email verification
- * - Login and JWT token generation
- * - Refresh token flow (issuing new access tokens)
- * - Logout (stateless JWT)
- * - Profile management
- * - Password management (update, forgot, reset)
- * - Email update with verification
- * <p>
- * This service uses stateless JWT authentication where:
- * - Access tokens are short-lived
- * - Refresh tokens are long-lived and used only to get new access tokens
- */
-
 @SuppressWarnings("ALL")
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-
 
     private final UsersRepo usersRepo;
     private final PasswordEncoder passwordEncoder;
@@ -68,69 +49,52 @@ public class AuthServiceImpl implements AuthService {
     private final StringRedisTemplate redisTemplate;
     private final TokenBlacklistService tokenBlacklistService;
 
-    // Redis Key Constants
     private static final String RESET_ATTEMPT_PREFIX = "auth:reset_attempt:";
     private static final String OTP_PREFIX = "auth:otp:";
     private static final String VERIFY_EMAIL_PREFIX = "auth:verify_email:";
     private static final String UPDATE_EMAIL_PREFIX = "auth:update_email:";
 
-
     @Override
     @Transactional
     public RegisterResponse register(SignUpRequest signUpRequest, MultipartFile file) throws IOException {
-        // check if email already exists
         if (usersRepo.findByEmail(signUpRequest.getEmail()).isPresent()) {
             throw new EmailAlreadyUsedException("The new email is already in use.");
         }
-        // Determine a role: default to USER if null (because if I want to create new roles for devs (usage only ex. adding category(admin) , adding product(seller))
+
         Role userRole = signUpRequest.getRole() != null ? signUpRequest.getRole() : Role.ROLE_USER;
-        // create new user
         Users user = Users.builder()
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
                 .email(signUpRequest.getEmail())
                 .role(userRole)
                 .password(passwordEncoder.encode(signUpRequest.getPassword()))
-                .enabled(false) // inactive until verified
+                .enabled(false)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // Upload image to Cloudinary
-        String imageUrl = cloudinaryService.uploadImage(file, "Customers", signUpRequest.getEmail());
+        String imageUrl = null;
+        if (file != null && !file.isEmpty()) {
+            imageUrl = cloudinaryService.uploadImage(file, "Customers", signUpRequest.getEmail());
+        }
 
         if (imageUrl != null) {
             user.setProfileImageUrl(imageUrl);
         }
 
-        //save user to DB
         usersRepo.save(user);
 
-
-        // generate and store token in Redis
         String token = UUID.randomUUID().toString();
         redisTemplate.opsForValue().set(VERIFY_EMAIL_PREFIX + token, user.getEmail(), Duration.ofHours(24));
 
-
-        // send verification email (change the URL depending on your deployment(frontend(3000) or backend(8080)) )
         String verificationLink = "http://localhost:8080/api/v1/auth/verify-email?token=" + token;
         String body = "Hello " + user.getFirstName() + ",\n\n" +
                 "Click the link to verify your account:\n" + verificationLink +
                 "\n\nIf you did not register, ignore this email.";
-        emailService.sendEmail(user.getEmail(), "Verify your account", body);
 
+        emailService.sendEmail(user.getEmail(), "Verify your account", body);
         return new RegisterResponse("User registered. Please check your email for verification.", token);
     }
 
-
-    /**
-     * Verify a user's email address.
-     * <p>
-     * Validates the verification token sent to the user's email.
-     * If valid and not expired, the user account is activated.
-     *
-     * @param token the email verification token
-     * @return a message indicating verification result
-     */
     @Override
     @Transactional
     public MessageResponse verifyEmail(String token) {
@@ -141,33 +105,21 @@ public class AuthServiceImpl implements AuthService {
 
         Users user = usersRepo.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
+
         user.setEmailVerified(true);
         user.setEnabled(true);
         usersRepo.save(user);
 
-        // Delete the token from Redis after successful verification
         redisTemplate.delete(VERIFY_EMAIL_PREFIX + token);
-
         return new MessageResponse("Email verified successfully!");
     }
 
-
-    /**
-     * Authenticate a user and generate JWT tokens.
-     * <p>
-     * Validates user credentials using Spring Security authentication.
-     * If successful, generates an access token and a refresh token.
-     *
-     * @param signInRequest login request containing email and password
-     * @return login response containing tokens and user details
-     * @throws InvalidCredentialsException if authentication fails
-     * @throws AccountNotVerifiedException if email is not verified
-     */
     @Override
     public LoginResponse login(SignInRequest signInRequest) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(signInRequest.getEmail(), signInRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(signInRequest.getEmail(),
+                            signInRequest.getPassword())
             );
         } catch (AuthenticationException ex) {
             throw new InvalidCredentialsException("Invalid email or password");
@@ -175,15 +127,12 @@ public class AuthServiceImpl implements AuthService {
 
         Users user = usersRepo.findByEmail(signInRequest.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
-
         if (!user.isEnabled()) {
             throw new AccountNotVerifiedException("Please verify your email first");
         }
 
-
         String token = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
-
         return new LoginResponse(
                 "Login successful",
                 token, refreshToken,
@@ -195,26 +144,9 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-
-    /**
-     * Refresh an expired access token.
-     * <p>
-     * Validates the provided refresh token and issues a new access token
-     * while reusing the same refresh token.
-     * <p>
-     * This method does not require database-backed refresh tokens
-     * and follows a stateless JWT approach.
-     *
-     * @param refreshTokenReq request containing the refresh token
-     * @return login response with a new access token
-     * @throws InvalidTokenException if the refresh token is invalid or expired
-     */
-
     @Override
-    public LoginResponse refreshToken(RefreshTokenReq refreshTokenReq) {
-        String refreshToken = refreshTokenReq.getToken();
-
-        // 1. Check if token is blacklisted in Redis
+    public LoginResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
+        String refreshToken = refreshTokenRequest.getToken();
         if (tokenBlacklistService.isBlacklisted(refreshToken)) {
             throw new InvalidTokenException("Refresh token has been revoked (blacklisted). Please login again.");
         }
@@ -228,19 +160,15 @@ public class AuthServiceImpl implements AuthService {
 
         Users user = usersRepo.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
-
-        // 2. Validate token signature and expiry
         if (!jwtService.validateToken(refreshToken, user)) {
             throw new InvalidTokenException("Refresh token expired or invalid");
         }
 
-        // Generate a NEW access token
         String newAccessToken = jwtService.generateToken(user);
-
         return new LoginResponse(
                 "Token refreshed successfully",
                 newAccessToken,
-                refreshToken, // reuse same refresh token
+                refreshToken,
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
@@ -249,22 +177,8 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-
-    /**
-     * Logout the current user.
-     * <p>
-     * In a stateless JWT setup, logout is handled client-side by
-     * deleting the access and refresh tokens.
-     * We also blacklist the token in Redis to prevent further usage until expiry.
-     *
-     * @param accessToken  authenticated user's access token
-     * @param refreshToken optional refresh token
-     * @return message confirming logout
-     */
     @Override
     public MessageResponse logout(String accessToken, String refreshToken) {
-
-        // 1. Blacklist Access Token
         if (accessToken != null && !accessToken.isEmpty()) {
             try {
                 java.util.Date expiration = jwtService.extractExpiration(accessToken);
@@ -272,12 +186,11 @@ public class AuthServiceImpl implements AuthService {
                 if (ttl > 0) {
                     tokenBlacklistService.blacklistToken(accessToken, ttl);
                 }
+
             } catch (Exception e) {
-                // If token is invalid or expired, no need to blacklist
             }
         }
 
-        // 2. Blacklist Refresh Token (if provided)
         if (refreshToken != null && !refreshToken.isEmpty()) {
             try {
                 java.util.Date expiration = jwtService.extractExpiration(refreshToken);
@@ -285,73 +198,42 @@ public class AuthServiceImpl implements AuthService {
                 if (ttl > 0) {
                     tokenBlacklistService.blacklistToken(refreshToken, ttl);
                 }
+
             } catch (Exception e) {
-                // If token is invalid or expired, no need to blacklist
             }
         }
 
         return new MessageResponse("Logged out successfully");
     }
 
-
-    /**
-     * Update the authenticated user's password.
-     * <p>
-     * Verifies the old password before updating to a new encrypted password.
-     *
-     * @param request          request containing old and new passwords
-     * @param currentUserEmail authenticated user's email
-     * @return message indicating success
-     */
     @Override
     @Transactional
     public MessageResponse updatePassword(UpdatePasswordRequest request, String currentUserEmail) {
-
         Users user = usersRepo.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        // Check old password
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Old password is incorrect");
         }
 
-        // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         usersRepo.save(user);
-
         return new MessageResponse("Password updated successfully");
     }
 
-
-    /**
-     * Update the authenticated user's profile.
-     * <p>
-     * Allows updating first name, last name, and profile image.
-     * Profile images are uploaded to Cloudinary.
-     *
-     * @param userEmail authenticated user's email
-     * @param firstName optional new first name
-     * @param lastName  optional new last name
-     * @param file      optional new profile image
-     * @return response containing updated profile data
-     * @throws IOException if image upload fails
-     */
     @Override
-    public UpdateProfileResponse updateProfile(String userEmail, String firstName, String lastName, MultipartFile file) throws IOException {
-
+    public UpdateProfileResponse updateProfile(String userEmail,
+                                               String firstName,
+                                               String lastName,
+                                               MultipartFile file) throws IOException {
         Users user = usersRepo.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        // Update special fields only if present
         if (firstName != null) user.setFirstName(firstName);
         if (lastName != null) user.setLastName(lastName);
-
-        // Upload a new profile photo
         if (file != null && !file.isEmpty()) {
             Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
                     ObjectUtils.asMap(
-                            "folder", "Customers",// folder name
-                            "public_id", userEmail, //file name
+                            "folder", "Customers",
+                            "public_id", userEmail,
                             "overwrite", true,
                             "resource_type", "image"
                     )
@@ -361,7 +243,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         usersRepo.save(user);
-
         return new UpdateProfileResponse(
                 "Profile updated successfully",
                 user.getFirstName(),
@@ -370,17 +251,9 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-
-    /**
-     * Retrieve the authenticated user's profile.
-     *
-     * @param email authenticated user's email
-     * @return profile response containing user details
-     */
     public GetProfileResponse getUserProfile(String email) {
         Users user = usersRepo.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-
         return new GetProfileResponse(
                 user.getEmail(),
                 user.getFirstName(),
@@ -389,15 +262,6 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-
-    /**
-     * Permanently delete the authenticated user's account.
-     * <p>
-     * Removes the user and any associated verification tokens.
-     *
-     * @param email authenticated user's email
-     * @return message indicating successful deletion
-     */
     @Transactional
     public MessageResponse deleteCurrentUser(String email) {
         Users user = usersRepo.findByEmail(email)
@@ -408,57 +272,28 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-
-    /**
-     * Request an email address update.
-     * <p>
-     * Sends a verification email to the new email address.
-     * The change is only applied after verification.
-     *
-     * @param currentEmail user's current email
-     * @param newEmail     requested new email
-     * @return response indicating verification email was sent
-     */
     @Transactional
     public UpdateEmailInitiateResponse requestEmailUpdate(String currentEmail, String newEmail) {
         Users user = usersRepo.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        // Check if a new email is already in use
         if (usersRepo.findByEmail(newEmail).isPresent()) {
             throw new EmailAlreadyUsedException("The new email is already in use.");
         }
 
-        // Generate verification token
         String token = UUID.randomUUID().toString();
-        // Store currentEmail:newEmail to know which user to update and what is the new email
         String value = currentEmail + ":" + newEmail;
         redisTemplate.opsForValue().set(UPDATE_EMAIL_PREFIX + token, value, Duration.ofHours(24));
-
-        // Send email with token link
         String verificationLink = "http://localhost:8080/api/v1/auth/update-email/verify?token=" + token;
         String body = "Hello " + user.getFirstName() + ",\n\n" +
                 "Click the link to verify your account:\n" + verificationLink +
                 "\n\nIf you did not try to change your email , ignore this email.";
         emailService.sendEmail(newEmail, "Verify your email", "Click to verify: " + body);
-
         return new UpdateEmailInitiateResponse(
                 "Verification email sent. Please check your inbox to confirm your new email.",
-                newEmail,
-                token
+                newEmail
         );
-
     }
 
-
-    /**
-     * Verify and apply a pending email update.
-     * <p>
-     * Validates the verification token and updates the user's email address.
-     *
-     * @param tokenStr email update verification token
-     * @return response confirming email update
-     */
     @Transactional
     public UpdateEmailResponse verifyEmailUpdate(String tokenStr) {
         String value = redisTemplate.opsForValue().get(UPDATE_EMAIL_PREFIX + tokenStr);
@@ -470,100 +305,52 @@ public class AuthServiceImpl implements AuthService {
         if (parts.length != 2) {
             throw new InvalidTokenException("Invalid token data.");
         }
+
         String currentEmail = parts[0];
         String newEmail = parts[1];
-
         Users user = usersRepo.findByEmail(currentEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-
         user.setEmail(newEmail);
         usersRepo.save(user);
-
-        // Delete token from Redis after use
         redisTemplate.delete(UPDATE_EMAIL_PREFIX + tokenStr);
-
         return new UpdateEmailResponse("Email updated successfully", user.getEmail());
     }
 
 
-    /**
-     * Retrieve all users.
-     * <p>
-     * Intended for development or administrative use.
-     *
-     * @return list of all users
-     */
-    public @Nullable List<Users> getAllUsers() {
-        return usersRepo.findAll();
-    }
 
-
-    /**
-     * Initiate the password reset process.
-     * <p>
-     * Generates a one-time password (OTP), stores it temporarily,
-     * and sends it to the user's email.
-     * <p>
-     * Rate limits reset attempts to prevent abuse.
-     *
-     * @param currentEmail user's email
-     * @return response indicating OTP was sent
-     */
     @Transactional
     @Override
     public ForgetPasswordResponse forgotPassword(String currentEmail) {
         Users user = usersRepo.findByEmail(currentEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("User not found with email: " + currentEmail));
-
-        // Rate Limiting using Redis
         String rateLimitKey = RESET_ATTEMPT_PREFIX + currentEmail;
         String attemptsStr = redisTemplate.opsForValue().get(rateLimitKey);
         int attempts = attemptsStr != null ? Integer.parseInt(attemptsStr) : 0;
-
         if (attempts >= 3) {
             throw new TooManyRequestsException("Too many reset attempts. Try again later.");
         }
 
-        // Increment attempts
         redisTemplate.opsForValue().increment(rateLimitKey);
         if (attempts == 0) {
             redisTemplate.expire(rateLimitKey, Duration.ofHours(1));
         }
 
-        // generate 6-digit OTP
         String otp = String.format("%06d", new Random().nextInt(1_000_000));
-
-        // Store OTP in Redis with 15 min expiration
         String otpKey = OTP_PREFIX + currentEmail;
         redisTemplate.opsForValue().set(otpKey, otp, Duration.ofMinutes(15));
-
-        // send email (do NOT include OTP in response)
         String body = "Hello " + user.getFirstName() + ",\n\n" +
                 "Your password reset code (OTP) is: " + otp + "\n\n" +
                 "This code expires in 15 minutes.";
         emailService.sendEmail(user.getEmail(), "Password Reset OTP", body);
-
-        return new ForgetPasswordResponse("OTP sent successfully. Please check your inbox.", otp);
+        return new ForgetPasswordResponse("OTP sent successfully. Please check your inbox.");
     }
 
-
-    /**
-     * Reset the user password using OTP verification.
-     * <p>
-     * Validates the OTP and updates the user's password if valid.
-     * OTP is deleted after successful use.
-     *
-     * @param request reset a password request containing OTP and a new password
-     * @return message indicating password reset success
-     */
     @Transactional
     public MessageResponse resetPassword(ResetPasswordRequest request) {
         Users user = usersRepo.findByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("User not found"));
-
         String otpKey = OTP_PREFIX + request.getEmail();
         String storedOtp = redisTemplate.opsForValue().get(otpKey);
-
         if (storedOtp == null) {
             throw new InvalidOtpException("OTP expired or invalid");
         }
@@ -572,16 +359,10 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidOtpException("Invalid OTP");
         }
 
-        // update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         usersRepo.save(user);
-
-        // delete OTP after successful use
         redisTemplate.delete(otpKey);
-
-        // Clear rate limit on success
         redisTemplate.delete(RESET_ATTEMPT_PREFIX + request.getEmail());
-
         return new MessageResponse("Password reset successfully");
     }
 }

@@ -6,7 +6,8 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class UpdateEmailInitiateResponse {
+
     private String message;
+
     private String newEmail;
-    private String verificationToken;
 }

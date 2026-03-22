@@ -38,12 +38,11 @@ public class Category {
 
     @ManyToOne
     @JoinColumn(name = "parent_id")
-    private Category parent; // points to the parent category
+    private Category parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-    private List<Category> subCategories = new ArrayList<>(); // list of children categories
+    private List<Category> subCategories = new ArrayList<>();
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Product> products = new ArrayList<>(); // list of products in this category
-
+    private List<Product> products = new ArrayList<>();
 }

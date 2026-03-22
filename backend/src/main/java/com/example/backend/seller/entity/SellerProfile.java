@@ -1,6 +1,6 @@
 package com.example.backend.seller.entity;
 
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class SellerProfile {
-    @Id @GeneratedValue private Long id;
+
+    @Id
+    @GeneratedValue
+    private Long id;
 
     @OneToOne(optional = false)
     private Users user;

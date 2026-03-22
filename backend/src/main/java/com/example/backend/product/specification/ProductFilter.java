@@ -12,9 +12,14 @@ import java.util.UUID;
 public class ProductFilter {
 
     private UUID id;
+
     private String name;
+
     private String category;
+
     private BigDecimal price;
+
     private BigDecimal minPrice;
+
     private BigDecimal maxPrice;
 }

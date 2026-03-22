@@ -12,19 +12,14 @@
     </style>
 </head>
 <body>
-
 <h2>⏳ Payment is being processed</h2>
 <p>Please wait while we confirm your payment.</p>
-
 <script>
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
-
     if (!sessionId) {
         document.body.innerHTML = "<h3>❌ Invalid payment session</h3>";
     }
 </script>
-
 </body>
 </html>
-

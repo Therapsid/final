@@ -1,5 +1,4 @@
-package com.example.backend.order.dto;
-
+package com.example.backend.order.dto.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -15,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+
 @Valid
 public class DirectOrderRequest {
 

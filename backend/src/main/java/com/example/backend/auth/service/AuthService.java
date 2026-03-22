@@ -2,7 +2,7 @@ package com.example.backend.auth.service;
 
 import com.example.backend.auth.dto.requests.*;
 import com.example.backend.auth.dto.responses.*;
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,13 +11,11 @@ import java.util.List;
 
 @Component
 public interface AuthService {
-
-
-    RegisterResponse register(SignUpRequest signUpRequest , MultipartFile file) throws IOException;
+    RegisterResponse register(SignUpRequest signUpRequest, MultipartFile file) throws IOException;
 
     LoginResponse login(SignInRequest signInRequest);
 
-    UpdateProfileResponse updateProfile(String userEmail, String firstName, String lastName,  MultipartFile file) throws IOException;
+    UpdateProfileResponse updateProfile(String userEmail, String firstName, String lastName, MultipartFile file) throws IOException;
 
     GetProfileResponse getUserProfile(String email);
 
@@ -31,7 +29,7 @@ public interface AuthService {
 
     MessageResponse resetPassword(ResetPasswordRequest request);
 
-    LoginResponse refreshToken(RefreshTokenReq refreshTokenReq);
+    LoginResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
 
     MessageResponse logout(String accessToken, String refreshToken);
 
@@ -39,7 +37,5 @@ public interface AuthService {
 
     MessageResponse verifyEmail(String token);
 
-    //dev only for testing
-    List<Users> getAllUsers();
 
 }

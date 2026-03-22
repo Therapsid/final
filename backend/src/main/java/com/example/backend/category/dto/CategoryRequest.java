@@ -1,6 +1,5 @@
 package com.example.backend.category.dto;
 
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -13,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CategoryRequest {
-
     @NotBlank(message = "Category name is required")
     @Size(max = 50, message = "Category name must be at most 50 characters")
     private String name;
@@ -22,5 +20,4 @@ public class CategoryRequest {
     private String description;
 
     private Long parentId;
-
 }

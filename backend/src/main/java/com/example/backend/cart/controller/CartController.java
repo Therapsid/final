@@ -1,9 +1,9 @@
 package com.example.backend.cart.controller;
 
+import com.example.backend.auth.dto.responses.MessageResponse;
 import com.example.backend.cart.dto.CartItemRequest;
 import com.example.backend.cart.dto.CartResponse;
 import com.example.backend.cart.service.CartService;
-import com.example.backend.auth.dto.responses.MessageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -25,8 +25,8 @@ import java.util.UUID;
 @Validated
 @Tag(name = "Cart", description = "Endpoints for managing user shopping cart")
 public class CartController {
-    private final CartService cartService;
 
+    private final CartService cartService;
 
     @Operation(
             summary = "Add a product to the user's cart.",
@@ -38,7 +38,6 @@ public class CartController {
     public ResponseEntity<CartResponse> addToCart(
             @Parameter(hidden = true) Authentication authentication,
             @Parameter(description = "the cart item request containing productId and quantity") @RequestBody @Valid CartItemRequest request) {
-
         String userEmail = authentication.getName();
         CartResponse resp = cartService.addToCart(userEmail, request.getProductId(), request.getQuantity());
         return ResponseEntity.ok(resp);
@@ -54,7 +53,6 @@ public class CartController {
     public ResponseEntity<CartResponse> updateQuantity(
             @Parameter(hidden = true) Authentication authentication,
             @Parameter(description = "the cart item request containing productId and the new quantity") @RequestBody @Valid CartItemRequest request) {
-
         String userEmail = authentication.getName();
         CartResponse resp = cartService.updateQuantity(userEmail, request.getProductId(), request.getQuantity());
         return ResponseEntity.ok(resp);
@@ -70,12 +68,10 @@ public class CartController {
     public ResponseEntity<CartResponse> removeFromCart(
             @Parameter(hidden = true) Authentication authentication,
             @Parameter(description = "the cart item request containing productId and the new quantity") @PathVariable UUID productId) {
-
         String userEmail = authentication.getName();
         CartResponse resp = cartService.removeFromCart(userEmail, productId);
         return ResponseEntity.ok(resp);
     }
-
 
     @Operation(
             summary = "Retrieve the current user's cart.",
@@ -101,5 +97,4 @@ public class CartController {
         String userEmail = authentication.getName();
         return ResponseEntity.ok(cartService.clearCart(userEmail));
     }
-
 }

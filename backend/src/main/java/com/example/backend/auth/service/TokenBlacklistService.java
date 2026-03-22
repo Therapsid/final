@@ -11,7 +11,6 @@ import java.time.Duration;
 public class TokenBlacklistService {
 
     private final StringRedisTemplate redisTemplate;
-    
     private static final String BLACKLIST_PREFIX = "blacklist:token:";
 
     public void blacklistToken(String token, long durationSeconds) {

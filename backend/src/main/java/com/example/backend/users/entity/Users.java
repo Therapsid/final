@@ -1,4 +1,4 @@
-package com.example.backend.entity;
+package com.example.backend.users.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,18 +42,18 @@ public class Users implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role; // USER, ADMIN, SELLER
+    private Role role;
 
     private boolean enabled = false;
 
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
-    private String verificationCode; // for email verification
+    private String verificationCode;
 
-    private String resetPasswordToken; // for password reset
+    private String resetPasswordToken;
 
-    private LocalDateTime resetTokenExpiry; // expiry of reset token
+    private LocalDateTime resetTokenExpiry;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -73,7 +73,6 @@ public class Users implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    //profile image url
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
@@ -99,6 +98,6 @@ public class Users implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return emailVerified; // enabled to your emailVerified flag
+        return emailVerified;
     }
 }

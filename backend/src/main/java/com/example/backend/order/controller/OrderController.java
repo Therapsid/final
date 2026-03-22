@@ -1,9 +1,9 @@
 package com.example.backend.order.controller;
 
-import com.example.backend.order.dto.CreateOrderRequest;
-import com.example.backend.order.dto.DirectOrderRequest;
-import com.example.backend.order.dto.OrderResponse;
-import com.example.backend.order.dto.OrderSummaryResponse;
+import com.example.backend.order.dto.request.CreateOrderRequest;
+import com.example.backend.order.dto.request.DirectOrderRequest;
+import com.example.backend.order.dto.response.OrderResponse;
+import com.example.backend.order.dto.response.OrderSummaryResponse;
 import com.example.backend.order.entity.Order;
 import com.example.backend.order.mapper.OrderMapper;
 import com.example.backend.order.service.OrderService;
@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Order", description = "Endpoints for managing user orders")
 public class OrderController {
+
     private final OrderService orderService;
 
     @Operation(
@@ -38,7 +39,8 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(
             @Parameter(description = "contains the shipping address for the order") @Valid @RequestBody CreateOrderRequest req,
-            @Parameter(hidden = true) Authentication authentication) {
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         String userEmail = authentication.getName();
         Order order = orderService.createOrderFromCart(userEmail, req.getShippingAddress());
         return ResponseEntity.status(HttpStatus.CREATED).body(OrderMapper.toDto(order));
@@ -52,8 +54,8 @@ public class OrderController {
     @PostMapping("/direct")
     public ResponseEntity<OrderResponse> directOrder(
             @Parameter(description = "contains productId, quantity, and shipping address") @Valid @RequestBody DirectOrderRequest request,
-            @Parameter(hidden = true) Authentication authentication) {
-
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         String userEmail = authentication.getName();
         Order order = orderService.createDirectOrder(
                 userEmail,
@@ -61,10 +63,7 @@ public class OrderController {
                 request.getQuantity(),
                 request.getShippingAddress()
         );
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(OrderMapper.toDto(order));
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrderMapper.toDto(order));
     }
 
     @Operation(
@@ -75,7 +74,8 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<Page<OrderSummaryResponse>> listOrders(
             @ParameterObject Pageable pageable,
-            @Parameter(hidden = true) Authentication authentication) {
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         String userEmail = authentication.getName();
         Page<Order> page = orderService.getOrdersForUser(userEmail, pageable);
         Page<OrderSummaryResponse> dtoPage = page.map(OrderMapper::toSummaryDto);
@@ -90,7 +90,8 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrder(
             @Parameter(description = "the Long of the order") @PathVariable Long id,
-            @Parameter(hidden = true) Authentication authentication) {
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         String userEmail = authentication.getName();
         Order order = orderService.getOrderById(id, userEmail);
         return ResponseEntity.ok(OrderMapper.toDto(order));
@@ -104,7 +105,8 @@ public class OrderController {
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<MessageResponse> cancelOrder(
             @Parameter(description = "the Long of the order") @PathVariable Long id,
-            @Parameter(hidden = true) Authentication authentication) {
+            @Parameter(hidden = true) Authentication authentication
+    ) {
         String userEmail = authentication.getName();
         orderService.cancelOrder(id, userEmail);
         return ResponseEntity.ok(new MessageResponse("Order cancelled."));

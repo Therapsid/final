@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 
-
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
@@ -32,7 +31,5 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 "path", request.getRequestURI()
         );
         mapper.writeValue(response.getOutputStream(), body);
-
     }
-
 }

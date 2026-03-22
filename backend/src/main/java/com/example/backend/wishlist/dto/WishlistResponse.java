@@ -13,6 +13,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class WishlistResponse {
+
     private UUID wishlistId;
+
     private List<ProductDto> products;
 }

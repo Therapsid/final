@@ -1,16 +1,20 @@
 package com.example.backend.auth.service;
 
-
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Users;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 
 public interface JWTservice {
     String generateToken(Users user);
+
     String generateRefreshToken(Users user);
+
     boolean validateToken(String token, UserDetails userDetails);
+
     String extractUsername(String token);
+
     List<String> extractRoles(String token);
+
     java.util.Date extractExpiration(String token);
 }

@@ -1,5 +1,4 @@
-package com.example.backend.order.dto;
-
+package com.example.backend.order.dto.response;
 
 import com.example.backend.order.entity.OrderStatus;
 import lombok.AllArgsConstructor;
@@ -9,13 +8,14 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+
 @Builder
-public class OrderSummaryResponse {
+public class OrderResponse {
 
     private Long id;
 
@@ -23,5 +23,11 @@ public class OrderSummaryResponse {
 
     private OrderStatus status;
 
+    private String shippingAddress;
+
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private List<OrderItemResponse> items;
 }

@@ -1,8 +1,8 @@
 package com.example.backend.auth.service.impl;
 
 import com.example.backend.auth.service.JWTservice;
-import com.example.backend.entity.Role;
-import com.example.backend.entity.Users;
+import com.example.backend.users.entity.Role;
+import com.example.backend.users.entity.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -35,37 +35,29 @@ public class JWTserviceImpl implements JWTservice {
         return key;
     }
 
-    // 2 months (60 days)
     private static final long ACCESS_TOKEN_EXPIRATION = 60L * 24 * 60 * 60 * 1000;
 
-    // 7 days for a refresh token
     private static final long REFRESH_TOKEN_EXPIRATION = 7 * 24 * 60 * 60 * 1000;
 
-    // Generating an access token
     @Override
     public String generateToken(Users user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
-
         Set<Role> roles = Set.of(user.getRole());
         return buildToken(claims, user.getEmail(), roles, ACCESS_TOKEN_EXPIRATION);
     }
 
-    // Generating refresh token
     @Override
     public String generateRefreshToken(Users user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole().name());
-
         Set<Role> roles = Set.of(user.getRole());
         return buildToken(claims, user.getEmail(), roles, REFRESH_TOKEN_EXPIRATION);
     }
 
     private String buildToken(Map<String, Object> claims, String username, Set<Role> roles, long expiration) {
         List<String> roleNames = roles.stream().map(Enum::name).toList();
-
         claims.put("roles", roleNames);
-
         return Jwts.builder()
                 .claims(claims)
                 .subject(username)
@@ -77,8 +69,9 @@ public class JWTserviceImpl implements JWTservice {
 
     public List<String> extractRoles(String token) {
         Claims claims = extractAllClaims(token);
+        return claims.get("roles", List.
 
-        return claims.get("roles", List.class);
+                class);
     }
 
     public String extractUsername(String token) {
@@ -89,7 +82,6 @@ public class JWTserviceImpl implements JWTservice {
         final Claims claims = extractAllClaims(token);
         return claimResolver.apply(claims);
     }
-
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()

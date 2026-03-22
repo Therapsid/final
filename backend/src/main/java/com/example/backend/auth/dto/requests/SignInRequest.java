@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 public class SignInRequest {
     @Email(message = "Invalid email format")
+
     @NotBlank(message = "Email is required")
     private String email;
 

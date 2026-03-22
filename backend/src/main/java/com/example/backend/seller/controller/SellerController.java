@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/api/v1/seller")
 @RequiredArgsConstructor
@@ -38,16 +37,12 @@ public class SellerController {
             @Parameter(description = "the requested store name the user wants to register as a seller") @RequestParam String storeName,
             @Parameter(description = "optional message or note explaining why the user wants to become a seller") @RequestParam(required = false) String reason,
             @Parameter(description = "verification document (e.g., ID or KYC document) uploaded as multipart file") @RequestPart MultipartFile document
-
     ) throws IOException {
-
         String email = authentication.getName();
-
         return ResponseEntity.ok(
-                sellerService.requestSeller(email, storeName,reason ,document)
+                sellerService.requestSeller(email, storeName, reason, document)
         );
     }
-
 
     @Operation(
             summary = "List all pending seller requests (ADMIN only).",
@@ -59,7 +54,6 @@ public class SellerController {
     public ResponseEntity<List<SellerRequestResponse>> listPending() {
         return ResponseEntity.ok(sellerService.getPendingRequests());
     }
-
 
     @Operation(
             summary = "Approve a seller request (ADMIN only).",
@@ -76,7 +70,6 @@ public class SellerController {
                 sellerService.approveRequest(requestId, authentication.getName())
         );
     }
-
 
     @Operation(
             summary = "Reject a seller request (ADMIN only).",

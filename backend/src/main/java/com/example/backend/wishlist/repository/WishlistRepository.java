@@ -1,7 +1,7 @@
 package com.example.backend.wishlist.repository;
 
+import com.example.backend.users.entity.Users;
 import com.example.backend.wishlist.entity.Wishlist;
-import com.example.backend.entity.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
