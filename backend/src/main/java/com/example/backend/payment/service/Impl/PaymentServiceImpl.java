@@ -1,5 +1,7 @@
 package com.example.backend.payment.service.Impl;
+
 import com.example.backend.order.entity.Order;
+import com.example.backend.order.entity.OrderItem;
 import com.example.backend.order.entity.OrderStatus;
 import com.example.backend.order.repository.OrderRepository;
 import com.example.backend.payment.dto.PaymentConfirmDto;
@@ -13,6 +15,9 @@ import com.example.backend.payment.mapper.PaymentMapper;
 import com.example.backend.payment.repository.PaymentRepository;
 import com.example.backend.payment.service.PaymentService;
 import com.example.backend.payment.util.StripeUtils;
+import com.example.backend.product.entity.Product;
+import com.example.backend.product.exception.ProductOutOfStockException;
+import com.example.backend.product.repository.ProductRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -23,18 +28,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+
 @SuppressWarnings("ALL")
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-private final OrderRepository orderRepository;
-private final PaymentRepository paymentRepository;
-private final PaymentMapper paymentMapper;
+    private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentMapper paymentMapper;
+    private final ProductRepository productRepository;
 
     @Value("${stripe.secretKey}")
     private String stripeApiKey;
@@ -47,7 +55,7 @@ private final PaymentMapper paymentMapper;
         Stripe.apiKey = stripeApiKey;
     }
 
-public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String userEmail) {
+    public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String userEmail) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() ->
                         new OrderPaymentNotAllowedException("Order not found: " + orderId));
@@ -76,7 +84,7 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
                         .setQuantity(1L)
                         .build();
         String successUrl = appBaseUrl + "/payment/success?session_id={CHECKOUT_SESSION_ID}";
-        String cancelUrl  = appBaseUrl + "/payment/cancel";
+        String cancelUrl = appBaseUrl + "/payment/cancel";
         Session session;
         try {
             session = Session.create(
@@ -98,7 +106,6 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
         payment.setCreatedAt(OffsetDateTime.now());
         payment.setExpiresAt(payment.getCreatedAt().plusMinutes(60));
         paymentRepository.save(payment);
-        order.setStatus(OrderStatus.DELIVERED);
         return paymentMapper.toCreateResponse(session.getId(), session.getUrl());
     }
 
@@ -113,24 +120,33 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
         }
 
         String sessionEmail = session.getCustomerEmail();
-        if (sessionEmail != null && !sessionEmail.equalsIgnoreCase(userEmail)) {
+        String effectiveEmail = userEmail;
+        if (effectiveEmail == null || effectiveEmail.isBlank()) {
+            effectiveEmail = sessionEmail;
+        }
+        if (effectiveEmail == null || effectiveEmail.isBlank()) {
+            throw new OrderPaymentNotAllowedException("Unable to resolve payment owner email for confirmation");
+        }
+        if (sessionEmail != null && !sessionEmail.equalsIgnoreCase(effectiveEmail)) {
             throw new OrderPaymentNotAllowedException("Authenticated user does not match session email");
         }
+
+        Payment payment = paymentRepository.findBySessionId(sessionId)
+                .orElseThrow(() ->
+                        new PaymentNotFoundException("Payment not found for session: " + sessionId));
 
         String orderIdStr = session.getMetadata() != null
                 ? session.getMetadata().get("order_id")
                 : null;
         if (orderIdStr == null) {
-            Payment payment = paymentRepository.findBySessionId(sessionId)
-                    .orElseThrow(() ->
-                            new PaymentNotFoundException("Payment not found for session: " + sessionId));
             orderIdStr = String.valueOf(payment.getOrderId());
         }
 
         Order order = orderRepository.findById(Long.valueOf(orderIdStr))
                 .orElseThrow(() ->
                         new OrderPaymentNotAllowedException("Order not found"));
-        if (!order.getUser().getEmail().equalsIgnoreCase(userEmail)) {
+        if (order.getUser() == null || order.getUser().getEmail() == null ||
+                !order.getUser().getEmail().equalsIgnoreCase(effectiveEmail)) {
             throw new OrderPaymentNotAllowedException("Order does not belong to authenticated user");
         }
 
@@ -151,40 +167,52 @@ public PaymentCreateResponse createCheckoutSessionForOrder(Long orderId, String 
             return paymentMapper.pending("Payment not completed yet");
         }
 
-        if (order.getStatus() != OrderStatus.PAID) {
+        if (payment.getStatus() != Payment.Status.PAID) {
+            for (OrderItem item : order.getItems()) {
+                Product product = item.getProduct();
+                Integer stock = product.getStock();
+                int required = item.getQuantity();
+                if (stock == null || stock < required) {
+                    throw new ProductOutOfStockException("Insufficient stock for product: " + product.getName());
+                }
+
+                product.setStock(stock - required);
+                productRepository.save(product);
+            }
+
+            order.setStatus(OrderStatus.PAID);
+            orderRepository.save(order);
+        } else if (order.getStatus() != OrderStatus.PAID) {
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
         }
 
         String piId = session.getPaymentIntent();
-        PaymentIntent finalPi = pi;
-        paymentRepository.findBySessionId(sessionId).ifPresent(p -> {
-            if (piId != null && !piId.isBlank()) {
-                p.setPaymentIntentId(piId);
+        if (piId != null && !piId.isBlank()) {
+            payment.setPaymentIntentId(piId);
+        }
+
+        payment.setStatus(Payment.Status.PAID);
+        payment.setPaidAt(java.time.OffsetDateTime.now());
+        if (pi != null) {
+            Long applicationFee = pi.getApplicationFeeAmount();
+            Long amount = pi.getAmount();
+            if (pi.getTransferData() != null) {
+                String dest = pi.getTransferData().getDestination();
+                payment.setSellerStripeAccountId(dest);
             }
 
-            p.setStatus(Payment.Status.PAID);
-            p.setPaidAt(java.time.OffsetDateTime.now());
-            if (finalPi != null) {
-                Long applicationFee = finalPi.getApplicationFeeAmount();
-                Long amount = finalPi.getAmount();
-                if (finalPi.getTransferData() != null) {
-                    String dest = finalPi.getTransferData().getDestination();
-                    p.setSellerStripeAccountId(dest);
-                }
-
-                if (applicationFee != null) {
-                    p.setPlatformFeeAmount(applicationFee);
-                }
-
-                if (amount != null) {
-                    long fee = (applicationFee != null ? applicationFee : 0L);
-                    p.setSellerAmount(amount - fee);
-                }
+            if (applicationFee != null) {
+                payment.setPlatformFeeAmount(applicationFee);
             }
 
-            paymentRepository.save(p);
-        });
+            if (amount != null) {
+                long fee = (applicationFee != null ? applicationFee : 0L);
+                payment.setSellerAmount(amount - fee);
+            }
+        }
+
+        paymentRepository.save(payment);
         return paymentMapper.ok("Payment confirmed successfully");
     }
 

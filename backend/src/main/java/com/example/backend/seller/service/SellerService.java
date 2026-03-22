@@ -1,6 +1,6 @@
 package com.example.backend.seller.service;
 
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.seller.dto.SellerRequestResponse;
 import org.springframework.web.multipart.MultipartFile;
 

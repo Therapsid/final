@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/categories")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "Endpoints for managing users")
 public class UsersController {

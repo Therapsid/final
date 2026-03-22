@@ -12,13 +12,57 @@
     </style>
 </head>
 <body>
-<h2>⏳ Payment is being processed</h2>
-<p>Please wait while we confirm your payment.</p>
+<h2 id="title">⏳ Payment is being processed</h2>
+<p id="desc">Please wait while we confirm your payment.</p>
 <script>
+    const titleEl = document.getElementById("title");
+    const descEl = document.getElementById("desc");
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
+
     if (!sessionId) {
-        document.body.innerHTML = "<h3>❌ Invalid payment session</h3>";
+        titleEl.textContent = "❌ Invalid payment session";
+        descEl.textContent = "Session id is missing.";
+    } else {
+        const maxAttempts = 10;
+        let attempts = 0;
+
+        const confirmPayment = async () => {
+            attempts += 1;
+            try {
+                const response = await fetch("/api/v1/payments/confirm?session_id=" + encodeURIComponent(sessionId), {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || ("HTTP " + response.status));
+                }
+
+                const result = await response.json();
+                if (result.paid) {
+                    titleEl.textContent = "✅ Payment confirmed";
+                    descEl.textContent = result.message || "Your payment is completed successfully.";
+                    return;
+                }
+
+                if (attempts >= maxAttempts) {
+                    titleEl.textContent = "⚠️ Confirmation is taking longer than expected";
+                    descEl.textContent = "Please refresh this page in a few seconds.";
+                    return;
+                }
+
+                setTimeout(confirmPayment, 2000);
+            } catch (error) {
+                titleEl.textContent = "❌ Payment confirmation failed";
+                descEl.textContent = "Please contact support with your session id: " + sessionId;
+            }
+        };
+
+        confirmPayment();
     }
 </script>
 </body>

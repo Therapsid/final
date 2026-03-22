@@ -1,6 +1,6 @@
 package com.example.backend.category.controller;
 
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.category.dto.CategoryRequest;
 import com.example.backend.category.dto.CategoryResponse;
 import com.example.backend.category.service.CategoryService;

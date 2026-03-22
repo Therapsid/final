@@ -1,4 +1,4 @@
-package com.example.backend.auth.dto.requests;
+package com.example.backend.users.dto.requests;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -17,7 +17,6 @@ public class UpdatePasswordRequest {
     private String oldPassword;
 
     @NotBlank(message = "New password is required")
-
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String newPassword;
 }

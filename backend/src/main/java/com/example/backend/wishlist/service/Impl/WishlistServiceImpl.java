@@ -1,6 +1,6 @@
 package com.example.backend.wishlist.service.Impl;
 
-import com.example.backend.auth.exception.UserNotFoundException;
+import com.example.backend.users.exception.UserNotFoundException;
 import com.example.backend.product.entity.Product;
 import com.example.backend.product.exception.ProductNotFoundException;
 import com.example.backend.product.repository.ProductRepository;

@@ -1,4 +1,4 @@
-package com.example.backend.auth.dto.responses;
+package com.example.backend.users.dto.responses;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +8,5 @@ import lombok.Data;
 public class UpdateEmailInitiateResponse {
 
     private String message;
-
     private String newEmail;
 }

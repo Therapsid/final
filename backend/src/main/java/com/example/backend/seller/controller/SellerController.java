@@ -1,6 +1,6 @@
 package com.example.backend.seller.controller;
 
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.seller.dto.SellerRequestResponse;
 import com.example.backend.seller.service.SellerService;
 import io.swagger.v3.oas.annotations.Operation;

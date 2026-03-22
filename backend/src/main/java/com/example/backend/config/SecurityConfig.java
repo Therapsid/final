@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/payments/confirm").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .anyRequest().authenticated()

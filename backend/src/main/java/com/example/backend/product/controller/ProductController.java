@@ -3,7 +3,7 @@ package com.example.backend.product.controller;
 import com.example.backend.product.dto.ProductRequest;
 import com.example.backend.product.dto.ProductResponse;
 import com.example.backend.product.service.ProductService;
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.product.specification.ProductFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

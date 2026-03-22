@@ -7,7 +7,7 @@ import com.example.backend.order.dto.response.OrderSummaryResponse;
 import com.example.backend.order.entity.Order;
 import com.example.backend.order.mapper.OrderMapper;
 import com.example.backend.order.service.OrderService;
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

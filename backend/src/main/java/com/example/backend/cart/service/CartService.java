@@ -1,6 +1,6 @@
 package com.example.backend.cart.service;
 import com.example.backend.cart.dto.CartResponse;
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import java.util.UUID;
 
 public interface CartService {

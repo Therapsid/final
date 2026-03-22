@@ -13,7 +13,7 @@ import com.example.backend.product.entity.Product;
 import com.example.backend.product.exception.ProductNotFoundException;
 import com.example.backend.product.exception.ProductOutOfStockException;
 import com.example.backend.product.repository.ProductRepository;
-import com.example.backend.auth.exception.UserNotFoundException;
+import com.example.backend.users.exception.UserNotFoundException;
 import com.example.backend.users.entity.Users;
 import com.example.backend.users.repository.UsersRepo;
 import lombok.RequiredArgsConstructor;
@@ -86,8 +86,6 @@ public class OrderServiceImpl implements OrderService {
             throw new ProductOutOfStockException("Insufficient stock");
         }
 
-        product.setStock(product.getStock() - quantity);
-        productRepository.save(product);
         Order order = Order.builder()
                 .user(user)
                 .shippingAddress(shippingAddress)
@@ -143,11 +141,6 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getStatus() == OrderStatus.CANCELLED) {
             return;
-        }
-
-        for (OrderItem item : order.getItems()) {
-            Product product = item.getProduct();
-            product.setStock(product.getStock() + item.getQuantity());
         }
 
         order.setStatus(OrderStatus.CANCELLED);

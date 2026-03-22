@@ -1,6 +1,6 @@
 package com.example.backend.cart.controller;
 
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.cart.dto.CartItemRequest;
 import com.example.backend.cart.dto.CartResponse;
 import com.example.backend.cart.service.CartService;

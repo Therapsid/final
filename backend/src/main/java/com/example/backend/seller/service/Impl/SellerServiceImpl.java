@@ -1,8 +1,8 @@
 package com.example.backend.seller.service.Impl;
 
 import com.cloudinary.Cloudinary;
-import com.example.backend.auth.dto.responses.MessageResponse;
-import com.example.backend.auth.exception.UserNotFoundException;
+import com.example.backend.common.dto.MessageResponse;
+import com.example.backend.users.exception.UserNotFoundException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.seller.dto.SellerRequestResponse;
 import com.example.backend.seller.entity.SellerProfile;

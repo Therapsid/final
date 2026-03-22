@@ -7,13 +7,14 @@ import com.example.backend.order.exception.OrderCancellationException;
 import com.example.backend.order.exception.OrderNotFoundException;
 import com.example.backend.product.exception.*;
 import com.example.backend.wishlist.exception.WishlistNotFoundException;
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.auth.exception.AccountNotVerifiedException;
 import com.example.backend.auth.exception.EmailAlreadyUsedException;
 import com.example.backend.auth.exception.InvalidCredentialsException;
 import com.example.backend.auth.exception.InvalidOtpException;
 import com.example.backend.payment.exception.*;
 import com.example.backend.seller.exception.SellerRequestException;
+import com.example.backend.users.exception.UserNotFoundException;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleOrderNotFound(OrderNotFoundException ex) {
         log.warn("Order lookup failed: {}", ex.getMessage());
+        Map<String, Object> body = Map.of(
+                "status", 404,
+                "timestamp", LocalDateTime.now(),
+                "message", ex.getMessage(),
+                "error", "Not Found"
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException ex) {
+        log.warn("User not found: {}", ex.getMessage());
         Map<String, Object> body = Map.of(
                 "status", 404,
                 "timestamp", LocalDateTime.now(),

@@ -12,7 +12,7 @@ import com.example.backend.product.exception.*;
 import com.example.backend.product.mapper.ProductMapper;
 import com.example.backend.product.repository.ProductRepository;
 import com.example.backend.product.service.ProductService;
-import com.example.backend.auth.dto.responses.MessageResponse;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.users.entity.Users;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.product.specification.ProductFilter;

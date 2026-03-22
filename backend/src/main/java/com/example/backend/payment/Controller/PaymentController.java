@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
@@ -39,17 +40,21 @@ public class PaymentController {
 
     @Operation(
             summary = "Confirm the payment status of a Stripe checkout session.",
-            description = "Confirm the payment status of a Stripe checkout session.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            description = "Confirm the payment status of a Stripe checkout session."
     )
     @GetMapping("/confirm")
     public PaymentConfirmDto confirmPayment(
             @Parameter(description = "the Stripe checkout session ID to confirm") @RequestParam("session_id") String sessionId,
             @Parameter(hidden = true) Authentication authentication
     ) {
+        String userEmail = null;
+        if (authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)) {
+            userEmail = authentication.getName();
+        }
         return paymentService.confirmPaymentBySessionId(
                 sessionId,
-                authentication.getName()
+                userEmail
         );
     }
 

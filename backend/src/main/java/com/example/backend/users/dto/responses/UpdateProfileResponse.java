@@ -1,4 +1,4 @@
-package com.example.backend.auth.dto.responses;
+package com.example.backend.users.dto.responses;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,10 +12,7 @@ import lombok.NoArgsConstructor;
 public class UpdateProfileResponse {
 
     private String message;
-
     private String firstName;
-
     private String lastName;
-
     private String profileImageUrl;
 }
