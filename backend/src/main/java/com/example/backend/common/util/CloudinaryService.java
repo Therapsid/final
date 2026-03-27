@@ -1,4 +1,4 @@
-package com.example.backend.util;
+package com.example.backend.common.util;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;

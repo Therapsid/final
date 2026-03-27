@@ -1,6 +1,5 @@
 package com.example.backend.category.service.Impl;
 
-import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.category.dto.CategoryRequest;
 import com.example.backend.category.dto.CategoryResponse;
 import com.example.backend.category.entity.Category;
@@ -8,6 +7,7 @@ import com.example.backend.category.exception.*;
 import com.example.backend.category.mapper.CategoryMapper;
 import com.example.backend.category.repository.CategoryRepository;
 import com.example.backend.category.service.CategoryService;
+import com.example.backend.common.dto.MessageResponse;
 import com.example.backend.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
-
     private final ProductRepository productRepository;
     private final CategoryMapper categoryMapper;
 

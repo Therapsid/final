@@ -1,4 +1,4 @@
-package com.example.backend.exception;
+package com.example.backend.common.exception;
 
 public class InvalidTokenException extends RuntimeException {
 

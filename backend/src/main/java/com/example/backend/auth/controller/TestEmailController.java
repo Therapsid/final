@@ -1,6 +1,6 @@
 package com.example.backend.auth.controller;
 
-import com.example.backend.util.EmailService;
+import com.example.backend.common.util.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

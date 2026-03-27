@@ -1,4 +1,4 @@
-package com.example.backend.exception;
+package com.example.backend.common.exception;
 
 import com.example.backend.category.exception.*;
 import com.example.backend.order.exception.InsufficientStockException;
@@ -17,15 +17,22 @@ import com.example.backend.seller.exception.SellerRequestException;
 import com.example.backend.users.exception.UserNotFoundException;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @SuppressWarnings("ALL")
@@ -349,6 +356,38 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+        }
+        log.warn("Request body validation failed: {}", errors);
+        return buildValidation(HttpStatus.BAD_REQUEST, "Validation failed", errors);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<?> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
+        log.warn("Method validation failed: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "Validation failed: " + ex.getMessage());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> handleConstraintViolationException(ConstraintViolationException ex) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            errors.put(violation.getPropertyPath().toString(), violation.getMessage());
+        }
+        log.warn("Constraint validation failed: {}", errors);
+        return buildValidation(HttpStatus.BAD_REQUEST, "Validation failed", errors);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        log.warn("Malformed or missing request body: {}", ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, "Request body is missing or malformed.");
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDeniedException(AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
@@ -368,6 +407,16 @@ public class GlobalExceptionHandler {
                 "error", status.getReasonPhrase(),
                 "message", message
         );
+        return ResponseEntity.status(status).body(body);
+    }
+
+    private ResponseEntity<?> buildValidation(HttpStatus status, String message, Map<String, String> errors) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        body.put("errors", errors);
         return ResponseEntity.status(status).body(body);
     }
 }
